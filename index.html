@@ -50,6 +50,7 @@ header button{background:#22252b;border:0;color:#c8ccd2;border-radius:10px;paddi
 .m.her .b{background:#24272e;border-bottom-left-radius:4px}
 .m.me .b{background:#2e7d32;border-bottom-right-radius:4px}
 .nt{font-size:12px;color:#b8a04a;margin-top:4px;line-height:1.5;max-width:80%;white-space:pre-wrap;word-break:break-word}
+.tsx{font-size:10.5px;color:#5d6673;margin-top:3px;line-height:1.4}
 .hint{color:#5d626a;font-size:13px;text-align:center;margin:18px 0;line-height:1.8}
 #result{flex:0 0 auto;max-height:58vh;overflow-y:auto;border-top:1px solid #262b33;background:#131519;display:none}
 #result.on{display:block}
@@ -101,6 +102,31 @@ footer .mini.her{color:#8fd3ff}
 #set .airow select{padding:6px;border-radius:8px;background:#22252b;color:#e6e6e6;border:1px solid #33363d;font-size:12px;width:auto}
 #set .aifb{width:100%;margin-top:6px;background:#22252b;color:#e6e6e6;border:1px solid #33363d;border-radius:8px;padding:8px;font-size:12.5px}
 #set .sechead{margin:22px 0 8px;font-size:13px;color:#cfe3d0;font-weight:bold;border-left:3px solid #2e7d32;padding-left:8px}
+/* 小窗 / 分屏模式（系统小窗宽度通常 <430px）：整体更紧凑，少占地方 */
+@media (max-width:430px){
+  .b{font-size:14px;padding:8px 10px;max-width:86%}
+  .nt{font-size:11px}
+  header{padding:9px 10px}
+  footer{padding:9px 10px}
+  #set{padding:10px}
+  #set input,#set textarea,#set select{padding:9px;font-size:14px}
+  #set .ok{padding:13px;margin-top:14px}
+  #set .back{padding:11px;margin-top:8px}
+  #uiBar{padding:10px 10px}
+  #uiBarMsg{font-size:12.5px}
+}
+
+/* 手机端：对象列表改成左侧 1/3 宽的覆盖式抽屉，聊天区保持全宽
+   （以前它是行内 flex 项，和聊天区平分宽度，把聊天压得很窄） */
+@media (max-width:719px){
+  #side{position:fixed;top:0;bottom:0;left:0;width:33.33vw;min-width:116px;max-width:206px;z-index:9;box-shadow:8px 0 26px rgba(0,0,0,.55)}
+  .citem{padding:10px 8px}
+  .citem .cn{font-size:13px;line-height:1.35}
+  .citem .cs{font-size:10px}
+  .sidehead{padding:10px 8px;font-size:12px}
+  .sidefoot{padding:8px}
+  .sidefoot button{font-size:12px;padding:9px 6px}
+}
 @media (min-width:720px){
   #side{display:flex}
   #menuBtn{display:none}
@@ -117,6 +143,9 @@ footer .mini.her{color:#8fd3ff}
       <button id="importChatBtn">📥 批量粘贴导入</button>
       <button id="importImgBtn" style="margin-top:6px">📷 截图导入（Soul/微信）</button>
       <input type="file" id="imgFiles" accept="image/*" multiple style="display:none">
+      <div style="font-size:11px;color:#6b7078;margin-top:6px;line-height:1.5;text-align:center">
+        也可以直接<b style="color:#9aa0a6">粘贴截图</b>（Ctrl+V / 长按粘贴）
+      </div>
     </div>
   </aside>
   <div id="main">
@@ -191,6 +220,26 @@ footer .mini.her{color:#8fd3ff}
     <input id="s_api" placeholder="sk-..." type="password" autocomplete="off">
     <label>我的微信昵称（导入对话时区分谁说的）</label>
     <input id="s_nick" placeholder="我的昵称">
+
+    <div class="sechead">模型来源</div>
+    <select id="s_provider">
+      <option value="deepseek">DeepSeek 云端（手机 / 默认）</option>
+      <option value="ollama">本地 Ollama · 狂暴模式（仅电脑 localhost）</option>
+    </select>
+    <div id="localCfg" style="display:none">
+      <label>本地模型地址</label>
+      <input id="s_ollama_url" placeholder="http://127.0.0.1:11434/v1" autocomplete="off">
+      <label>本地模型名</label>
+      <input id="s_ollama_model" placeholder="qwen3-abl" autocomplete="off">
+      <div style="font-size:11.5px;color:#e0a800;line-height:1.7;margin:6px 0 0">
+        ⚠ 浏览器禁止 https 页面访问本机 http，<b>所以狂暴模式只能用 <code>http://localhost:8000</code> 打开本页时生效</b>。<br>
+        在手机上（github.io 的 https 页面）只能走云端。<br>
+        截图识别固定走云端 —— 本地 7B 模型没有视觉能力。
+      </div>
+      <button class="back" id="sTestLocal">🔌 测试本地连接</button>
+      <div id="localMsg" style="font-size:12px;color:#7ee787;margin-top:6px;min-height:14px;line-height:1.6"></div>
+    </div>
+
     <button class="ok" id="sSave">保存</button>
     <button class="back" id="sExport">导出档案（加密备份）</button>
     <button class="back" id="sImport">导入档案（选 JSON 文件）</button>
@@ -225,7 +274,7 @@ footer .mini.her{color:#8fd3ff}
     <button class="back" id="sClearAll" style="color:#ff8a80">⚠ 清空全部数据（含 API Key）</button>
     <button class="back" id="sClose">关闭</button>
     <div style="font-size:12px;color:#5d6673;margin-top:14px;line-height:1.8">
-      版本 <span id="ver">v39</span> · <a href="javascript:location.reload(true)" style="color:#8fb8ff">强制刷新</a><br>
+      版本 <span id="ver">v49</span><span id="verMode"></span> · <a href="javascript:location.reload(true)" style="color:#8fb8ff">强制刷新</a><br>
       数据只存在本机浏览器，不上传。
     </div>
   </div>
@@ -239,6 +288,17 @@ footer .mini.her{color:#8fd3ff}
       <div><label>地区</label><input id="s_area"></div>
       <div><label>平台</label><input id="s_platform"></div>
     </div>
+
+    <div class="sechead">初次接触：主页 / 朋友圈情报</div>
+    <div style="font-size:11.5px;color:#8a9099;line-height:1.6;margin-bottom:6px">
+      开口前先看她的主页/朋友圈，把能看到的写进来 —— 开场白决定了她会不会回你。
+    </div>
+    <textarea id="s_home" rows="4" placeholder="个性签名、最近发的内容、照片内容、兴趣标签、职业学校、点赞互动…&#10;（也可以点下面的按钮让 AI 读截图）"></textarea>
+    <button class="back" id="sHomeImgBtn">📷 截图识别主页/朋友圈</button>
+    <input type="file" id="sHomeImg" accept="image/*" multiple style="display:none">
+    <button class="back" id="sOpenerBtn">🎬 生成开场白（v4-pro）</button>
+    <div id="openMsg" style="font-size:12px;color:#7ee787;margin-top:6px;min-height:14px"></div>
+    <div id="openerBox"></div>
 
     <label>关系阶段：<b id="stageLabel" style="color:#7ee787">刚认识</b></label>
     <input type="range" id="s_stage" min="0" max="5" step="1" value="0">
@@ -273,9 +333,9 @@ footer .mini.her{color:#8fd3ff}
     <label>历史进度（每行一条）</label>
     <textarea id="s_hist" rows="4"></textarea>
 
-    <div class="sechead">关键信息（自动提取，可手改）</div>
-    <textarea id="s_facts" rows="6" placeholder="点下面「提取关键信息」自动填：身高、体重、年龄、生日、地址、职业、家庭、作息、喜好、忌讳…"></textarea>
-    <button class="back" id="sFactsBtn">🔍 从对话提取关键信息</button>
+    <div class="sechead">人物画像（AI 提炼，可手改）</div>
+    <textarea id="s_facts" rows="8" placeholder="点下面按钮自动生成：硬事实（带原话）+ 画像提炼（核心动机/情绪模式/安全感/雷区成因/她怎么看我/话题偏好）"></textarea>
+    <button class="back" id="sFactsBtn">🧬 提炼人物画像（v4-pro）</button>
     <button class="back" id="sAnalyzeBtn">🧠 增量深度分析（v4-pro）</button>
     <div id="anaMsg" style="font-size:12px;color:#7ee787;margin-top:6px;min-height:14px"></div>
     <div class="sechead">分析历史（可评分/评论，评论会喂给下次分析）</div>
@@ -301,6 +361,22 @@ const STYLE=`【我的说话风格（务必模仿）】
 - 关心方式是给方案不给情绪
 - 绝对不用"宝贝""想你""我在""心疼"，不撒娇不示弱不道歉`;
 
+/* ---------- 本地小模型专用提示词（7B 遵循长指令能力差，必须精简 + 靠模仿） ---------- */
+const STYLE_LOCAL=`【我的说话风格（必须模仿）】
+短句连发，每条不超过 20 字，可以连发 2-3 条。
+互损是常态（狗屎、放屁、蠢货、你丫的），只到玩笑级。
+爱反问、爱自嘲；绝对不用"宝贝""想你""我在""心疼"，不撒娇不示弱不道歉。
+偶尔来一句带框架词的（必然/最优解/天平两端），但别长篇。`;
+
+const RULES_LOCAL=`【硬规矩】
+1. 只写能直接发出去的微信原话，不解释、不总结、不说教。
+2. 严格模仿【最近对话】里"我"那几行的句长、语气、用词，越像越好。
+3. 一次只推进一小步；她设边界就立刻停。
+4. 不要写成小作文，不要用"首先/其次/总之"。`;
+
+const ASK_LOCAL=`【输出】
+只输出 JSON，不要任何其他文字：
+{"read":"一句话判读（15字内）","score":{"interest":6,"invest":5,"advance":6},"options":[{"tag":"A 保守","text":"可直接发的原话","expect":"她可能怎么回","risk":"风险"},{"tag":"B 推进","text":"可直接发的原话","expect":"她可能怎么回","risk":"风险"},{"tag":"C 退一步","text":"可直接发的原话","expect":"她可能怎么回","risk":"风险"}],"path":["第一步","第二步","第三步"],"taboo":["别说的话","别说的话"]}`;
 const RULES=`【规矩】
 1. 不许设计"让她以为是她主动"的套路；正确做法是引用她真说过的话、抛问题让她答、把她的答案往前推一步。
 2. 一次只推进一步，跳级=关系崩。
@@ -381,7 +457,8 @@ function renderLog(){
     const d=document.createElement('div');
     d.className='m '+(m.who==='我'?'me':'her');
     const note=m.note?'<div class="nt">📝 '+esc(m.note)+'</div>':'';
-    d.innerHTML='<div><div class="b">'+esc(m.text)+'</div>'+note+'</div>';
+    const tsHtml=m.ts?'<div class="tsx">'+esc(m.ts)+'</div>':'';
+    d.innerHTML='<div><div class="b">'+esc(m.text)+'</div>'+tsHtml+note+'</div>';
     d.querySelector('.b').onclick=function(){
       uiPrompt('给这条消息加说明（表情包/语音/背景；留空 = 删除说明）', m.note||'').then(function(v){
         if(v===null) return;
@@ -404,7 +481,7 @@ function renderResult(data){
   (data.options||[]).forEach((o,i)=>{
     h+='<div class="opt"><div class="tag">'+esc(o.tag||('选项'+(i+1)))+'</div>'+
        '<div class="tx">'+esc(o.text)+'</div>'+
-       '<div class="meta">预期：'+esc(o.expect||'')+'<br>风险：'+esc(o.risk||'')+'</div>'+
+       '<div class="meta">预期：'+esc(o.expect||'—')+'<br>风险：'+esc(o.risk||'—')+'</div>'+
        '<button class="cp" data-i="'+i+'">复制这句</button></div>';
   });
   if((data.path||[]).length){h+='<div class="other"><h4>路径</h4>'+data.path.map(p=>'· '+esc(p)).join('<br>')+'</div>';}
@@ -521,19 +598,51 @@ $('extraBtn').onclick=function(){
   if(on) $('extra').focus();
 };
 
+/* ---------- 模型来源：DeepSeek 云端 / 本地 Ollama（狂暴模式） ----------
+   ⚠ 浏览器禁止 https 页面访问 http://localhost（mixed content 拦截），
+   所以狂暴模式只能在用 http://localhost 或 http://局域网IP 打开本页时生效。 */
+function isLocal(){ return db.provider==='ollama'; }
+function apiUrl(){
+  if(isLocal()){
+    var u=(db.ollamaUrl||'http://127.0.0.1:11434/v1').trim().replace(/\/+$/,'');
+    return u+'/chat/completions';
+  }
+  return 'https://api.deepseek.com/chat/completions';
+}
+function apiHeaders(){
+  var h={'Content-Type':'application/json'};
+  if(!isLocal()) h['Authorization']='Bearer '+db.apiKey;
+  return h;
+}
+function apiModel(name){
+  if(isLocal()) return (db.ollamaModel||'qwen3-abl').trim();
+  return name;
+}
+function apiBody(body){
+  if(isLocal()){ delete body.thinking; }   /* Ollama 不认这个字段 */
+  return body;
+}
+function ensureKey(){
+  if(!isLocal() && !db.apiKey) throw new Error('还没填 API Key（⚙️ → 密钥与数据）');
+}
+/* 复杂 JSON 任务（开场白/画像提炼/深度分析）本地 7B 做不好，强制走云端 */
+function requireCloud(what){
+  if(isLocal()) throw new Error(what+'需要云端模型 —— 本地 7B 生成复杂 JSON 会残缺。请到 ⚙️ 把「模型来源」切回 DeepSeek 云端。');
+}
+
 async function callAPI(prompt){
-  if(!db.apiKey) throw new Error('还没填 API Key，点右上角 ⚙️');
-  const res=await fetch('https://api.deepseek.com/chat/completions',{
+  ensureKey();
+  const res=await fetch(apiUrl(),{
     method:'POST',
-    headers:{'Content-Type':'application/json','Authorization':'Bearer '+db.apiKey},
-    body:JSON.stringify({
-      model:'deepseek-flash',
+    headers:apiHeaders(),
+    body:JSON.stringify(apiBody({
+      model:apiModel('deepseek-flash'),
       messages:[{role:'user',content:prompt}],
-      temperature:0.8,
+      temperature: isLocal()?0.6:0.8,
       max_tokens:1500,
       response_format:{type:'json_object'},
       thinking:{type:'disabled'}
-    })
+    }))
   });
   if(!res.ok) throw new Error('API 返回 '+res.status+'：'+(await res.text()).slice(0,160));
   const j=await res.json();
@@ -549,12 +658,49 @@ $('go').onclick=async function(){
 
   const extraEl=$('extra');
   const extraText=extraEl?extraEl.value.trim():'';
-  let recent=c.dialog.slice(-20).map(m=>m.who+'：'+m.text+(m.note?('  〔我的说明：'+m.note+'〕'):'')).join('\n');
+  let recent=c.dialog.slice(-20).map(m=>fmtTs(m.ts)+m.who+'：'+m.text+(m.note?('  〔我的说明：'+m.note+'〕'):'')).join('\n');
   if(extraText) recent='【补充说明（我加的，不是她说的）】\n'+extraText+'\n\n【对话】\n'+recent;
 
+  /* 本地 7B：用极简提示词 + 拿我真实说过的话当范例；云端：用完整提示词 */
+  const USE_STYLE = isLocal() ? STYLE_LOCAL : STYLE;
+  const USE_RULES = isLocal() ? RULES_LOCAL : RULES;
+  const USE_ASK   = isLocal() ? ASK_LOCAL   : ASK;
+
+  let prompt;
+  if(isLocal()){
+    /* 本地 7B 专用：极简提示 + 用我真实说过的话当范例（小模型最有效的手段） */
+    const mine=c.dialog.filter(function(m){return m.who==='我';}).slice(-8).map(function(m){return m.text;}).join('\n');
+    let lastHer='';
+    for(var _i=c.dialog.length-1;_i>=0;_i--){ if(c.dialog[_i].who==='她'){ lastHer=c.dialog[_i].text; break; } }
+    prompt=`帮我回她的消息，严格按下面做。
+
+【这就是我平时的说话方式，必须模仿句长和语气】
+${mine||'（暂无我的发言，按短句、不撒娇来）'}
+
+【她】${c.age||'?'}岁 ${c.area||''}｜${STAGES[c.stage]||'未知阶段'}｜我的目标：${c.goal||'未填'}｜雷区：${c.taboo||'无'}
+
+【她刚说】
+${lastHer}
+
+【硬规矩】
+1. 必须直接回应她刚说的那一句，绝对不许换话题，不许说无关的事。
+2. 每条不超过 20 字，可以连发 2 条（换行分开）。
+3. 不撒娇、不示弱、不说"我都可以""你喜欢的我都尝试"这类讨好话。
+4. 不解释、不说教、只给能直接发出去的原话。
+5. A/B/C 必须明显不同：A 稳着接、B 直接撩回去、C 稍微退一步。
+6. risk 必须写具体坏处（例如"她会觉得我太急"），**不许写"无"**。
+
+【输出】只输出这个 JSON，所有字段都必须填满，不许留空：
+{"read":"她的意图（10字内）",
+ "options":[
+  {"tag":"A 稳","text":"要发的话","expect":"她大概怎么回","risk":"坏处"},
+  {"tag":"B 狠","text":"要发的话","expect":"她大概怎么回","risk":"坏处"},
+  {"tag":"C 退","text":"要发的话","expect":"她大概怎么回","risk":"坏处"}],
+ "taboo":["此刻绝对不能说的一句"]}`;
+  }else{
   const prompt=`帮我回一条消息，严格照做。
 
-${STYLE}
+${USE_STYLE}
 
 【对象】${c.name}｜${c.age}岁｜${c.area}｜${c.platform}
 【关系阶段】${STAGES[c.stage]||'未知'}
@@ -567,15 +713,37 @@ ${STYLE}
 【关键信息】${(c.facts||'').replace(/\n/g,'；')||'无'}
 【历史】${(c.hist||'').replace(/\n/g,'；')||'无'}
 
-${RULES}
-${ASK}
+${USE_RULES}
+${USE_ASK}
+
+【时间与节奏（重要）】
+每条消息前面的 [时间] 是真实发送时间。请据此判断：
+- 她的回复速度（秒回 / 隔几分钟 / 隔几小时 / 隔天），最近是变快还是变慢
+- 谁先开口、谁收尾、她一天里最活跃的时段（早/午/晚/深夜）
+把这个节奏作为判断"她此刻兴趣度"的依据之一：
+- 她明显在秒回 → 可以稍微主动，不要给过度保守的选项
+- 她隔很久才回 → 不要给推进型话术，给低压力、易接的
+（没有时间戳的消息按顺序理解，不要编造时间。）
 
 【最近对话（最后一条是要回的）】
 ${recent}`;
+  }
 
   this.disabled=true; stat('分析中…');
   try{
-    const data=await callAPI(prompt);
+    let data=await callAPI(prompt);
+    /* 本地小模型常违反"不许讨好"的负向约束 → 代码层拦截，命中就强制重写一次 */
+    if(isLocal() && data){
+      const BANNED=['我都愿意尝试','我都可以','你喜欢的我都','随便你','随便啦','听你的','你说啥就是啥'];
+      const hasBanned=function(d){
+        const s=JSON.stringify(d||{});
+        return BANNED.some(function(b){ return s.indexOf(b)>=0; });
+      };
+      if(hasBanned(data)){
+        stat('检出讨好话，重写中…');
+        data=await callAPI(prompt+'\n\n【重要纠正】你上一版写了讨好话（例如"我都愿意尝试""我都可以"），这是硬性禁止的。重写一版，任何选项都不许出现这类说法。');
+      }
+    }
     renderResult(data);
     stat(data?'✅ 出好了':'⚠️ 模型没按 JSON 返回');
   }catch(e){ stat('❌ '+e.message,true); }
@@ -583,17 +751,17 @@ ${recent}`;
 };
 
 async function callModel(model, prompt, maxTokens){
-  if(!db.apiKey) throw new Error('还没填 API Key，点右上角 ⚙️');
-  const res=await fetch('https://api.deepseek.com/chat/completions',{
+  ensureKey();
+  const res=await fetch(apiUrl(),{
     method:'POST',
-    headers:{'Content-Type':'application/json','Authorization':'Bearer '+db.apiKey},
-    body:JSON.stringify({
-      model:model,
+    headers:apiHeaders(),
+    body:JSON.stringify(apiBody({
+      model:apiModel(model),
       messages:[{role:'user',content:prompt}],
       max_tokens:maxTokens||2000,
       response_format:{type:'json_object'},
       thinking:{type:'disabled'}
-    })
+    }))
   });
   if(!res.ok) throw new Error('API '+res.status+'：'+(await res.text()).slice(0,160));
   const j=await res.json();
@@ -603,34 +771,237 @@ async function callModel(model, prompt, maxTokens){
 function dialogText(c, limit){
   const arr = limit ? c.dialog.slice(-limit) : c.dialog;
   return arr.map(function(m){
-    return (m.who==='我'?'我':'她')+'：'+m.text+(m.note?'〔说明：'+m.note+'〕':'');
+    return fmtTs(m.ts)+(m.who==='我'?'我':'她')+'：'+m.text+(m.note?'〔说明：'+m.note+'〕':'');
   }).join('\n');
 }
+/* 时间戳统一格式化成 "[16:30] " 前缀；没有时间就不加 */
+function fmtTs(ts){
+  var t=(ts||'').trim();
+  return t ? ('['+t+'] ') : '';
+}
+
+/* ---------- 截图重叠去重 ----------
+   同一段聊天分多张截图截（或长图自动切段）时，相邻两张会有一段重叠。
+   做法：把「已有对话的尾部」和「新识别内容的头部」做最长连续匹配，
+   匹配上的那段直接丢掉。跨图片、跨切段都生效（因为每次都跟 c.dialog 尾部比）。 */
+function _normMsg(m){
+  return (m.who==='我'?'我':'她')+'|'+String(m.text||'').replace(/\s+/g,'').trim();
+}
+function _dropOverlap(existing, incoming){
+  if(!existing || !existing.length || !incoming || !incoming.length) return incoming;
+  var maxK=Math.min(existing.length, incoming.length, 30);
+  /* 第一步：找 >=2 条的连续重叠（最可靠，误伤概率极低） */
+  for(var k=maxK;k>=2;k--){
+    var ok=true;
+    for(var i=0;i<k;i++){
+      if(_normMsg(existing[existing.length-k+i])!==_normMsg(incoming[i])){ ok=false; break; }
+    }
+    if(ok) return incoming.slice(k);
+  }
+  /* 第二步：只重叠 1 条时，仅当这条内容足够长（>=12字）才认，
+     避免把「哈哈」「好」「嗯」这种正常重复的短消息误删 */
+  var first=incoming[0];
+  if(first && String(first.text||'').replace(/\s+/g,'').length>=12){
+    var last=existing[existing.length-1];
+    if(last && _normMsg(last)===_normMsg(first)) return incoming.slice(1);
+  }
+  return incoming;
+}
 function anaStat(t){ const e=document.getElementById('anaMsg'); if(e) e.textContent=t; }
+
+/* ================= 初次接触：主页情报 + 开场白 ================= */
+/* 通用视觉调用：提示词 + 一张图 → 解析后的 JSON */
+async function callVision(promptText, dataUrl, maxTokens){
+  /* 读图必须走云端：本地 7B 模型没有视觉能力 */
+  if(!db.apiKey) throw new Error('截图识别需要云端 DeepSeek（本地模型不支持读图），请先在设置里填 API Key');
+  var body={
+    model:'deepseek-flash',
+    messages:[{role:'user',content:[
+      {type:'text',text:promptText},
+      {type:'image_url',image_url:{url:dataUrl}}
+    ]}],
+    max_tokens:maxTokens||2000,
+    response_format:{type:'json_object'},
+    thinking:{type:'disabled'}
+  };
+  var res=await fetch('https://api.deepseek.com/chat/completions',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+db.apiKey},
+    body:JSON.stringify(body)
+  });
+  if(!res.ok) throw new Error('API '+res.status+'：'+(await res.text()).slice(0,150));
+  var j=await res.json();
+  var t=j.choices[0].message.content.trim().replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/```$/,'').trim();
+  return JSON.parse(t);
+}
+
+/* 主页/朋友圈截图 → 描述成文字，追加进「主页情报」 */
+$('sHomeImgBtn').onclick=function(){ $('sHomeImg').click(); };
+$('sHomeImg').onchange=async function(e){
+  var files=Array.prototype.slice.call(e.target.files||[]);
+  e.target.value='';
+  if(!files.length) return;
+  var msg=$('openMsg');
+  msg.style.color='#7ee787';
+  var added=0;
+  for(var i=0;i<files.length;i++){
+    try{
+      msg.textContent='识别主页：第 '+(i+1)+'/'+files.length+' 张…';
+      var slices=await fileToSlices(files[i]);
+      for(var k=0;k<slices.length;k++){
+        var out=await callVision(
+`这是一张社交软件的主页 / 朋友圈截图。请把能看出的信息整理成文字，供后续判断这个人的性格、以及该用什么话题开场。
+
+逐项写：
+1. 个性签名 / 简介：原样抄下来
+2. 头像与照片：描述画面内容（在做什么、在哪里、和谁、什么风格）
+3. 最近发布：文字原样摘录，配图描述画面
+4. 资料字段：可见的年龄 / 地区 / 职业 / 学校 / 兴趣标签
+5. 互动痕迹：点赞评论数、谁在评论、她回复的语气（看得出才写）
+6. 风格判断：她呈现出来的人设（精致 / 随性 / 文艺 / 御姐 / 可爱 …），附一句依据
+
+不能确定的写"看不清"，不要编造。
+只输出 JSON：{"text":"（按上面小标题分段的多行文本）"}`, slices[k], 1800);
+        if(out && out.text){
+          var cur=$('s_home').value.trim();
+          $('s_home').value=(cur? cur+'\n\n---\n\n' : '')+out.text;
+          added++;
+        }
+      }
+    }catch(err){
+      msg.style.color='#ff8a80';
+      msg.textContent='识别失败：'+(err&&err.message?err.message:err);
+      return;
+    }
+  }
+  var c=A(); if(c){ c.home=$('s_home').value; save(); }
+  msg.style.color='#7ee787';
+  msg.textContent='✅ 已追加 '+added+' 段主页信息（可以手改，然后点「生成开场白」）';
+};
+
+/* 生成开场白：用 v4-pro（这活儿值这个钱） */
+$('sOpenerBtn').onclick=async function(){
+  var c=A(); if(!c){ uiMsg('先在左边建一个对象', false); return; }
+  var btn=this; btn.disabled=true;
+  var msg=$('openMsg'); msg.style.color='#7ee787';
+  msg.textContent='生成中…（v4-pro，约 15-30 秒）';
+  var home=$('s_home').value.trim();
+  try{
+    requireCloud('生成开场白');
+    var out=await callModel('deepseek-v4-pro',
+`你是"第一次开口"的开场白设计师。用户马上要给这个刚认识的人发第一条消息，开场白决定她会不会回。
+
+【对方公开信息（主页 / 朋友圈 / 资料）】
+${home||'（用户没提供，按信息不足处理）'}
+
+【已知档案】
+名字：${c.name}｜年龄：${c.age||'未知'}｜地区：${c.area||'未知'}｜平台：${c.platform||'未知'}
+关系阶段：${STAGES[c.stage]||'未知'}｜我的目标：${c.goal}
+她的类型：${c.type||'未知'}
+我的定位：${c.myrole||'未知'}
+
+${STYLE}
+
+要求：
+1. judge：一句「初步评估」（40 字内）——这个人最可能在意的点 + 最好的切入角度。
+2. 给 3 个不同策略的开场白，每句都能直接复制发出去：
+   - A 安全型：最容易被回，风险最低
+   - B 细节型：必须钩住她主页/朋友圈里的【具体细节】（哪张照片、哪句话、哪个标签），让她感觉"你注意到我了"
+   - C 有个性型：略微出人意料但绝对有分寸，不油腻、不套路
+3. 每句 12-30 字，像真人发微信。禁止：「你好，很高兴认识你」「在吗」「冒个泡」「交个朋友」「你的照片真好看」「小姐姐」这类。
+4. 每条配 why（为什么这样说，一句）、expect（她大概会怎么回）、next（如果她这样回，你下一句说什么）。
+5. taboo：3 条这个人身上一开口就绝对不能碰的。
+6. 公开信息为空时，按平台和关系阶段给通用但具体的方案，并在 judge 里写明"信息不足，建议先看一眼她的主页"。
+
+输出 JSON：
+{"judge":"…","options":[{"tag":"A 安全型","text":"…","why":"…","expect":"…","next":"…"},{"tag":"B 细节型","text":"…","why":"…","expect":"…","next":"…"},{"tag":"C 有个性型","text":"…","why":"…","expect":"…","next":"…"}],"taboo":["…","…","…"]}`, 2500);
+    c.opener=out; c.home=home; save();
+    renderOpener(out);
+    msg.textContent='✅ 生成完成，点「复制这句」直接用';
+  }catch(e){
+    msg.style.color='#ff8a80';
+    msg.textContent='❌ '+(e&&e.message?e.message:e);
+  }
+  finally{ btn.disabled=false; }
+};
+
+/* 渲染开场白结果 */
+function renderOpener(out){
+  var box=$('openerBox'); if(!box) return;
+  if(!out || !out.options || !out.options.length){ box.innerHTML=''; return; }
+  var h='<div style="border:1px solid #2a2f37;border-radius:10px;padding:10px;margin-top:10px;background:#16181d">';
+  if(out.judge) h+='<div style="font-size:12.5px;color:#cfe3d0;line-height:1.6;margin-bottom:6px"><b>初步评估</b>：'+esc(out.judge)+'</div>';
+  out.options.forEach(function(o,i){
+    h+='<div style="border-top:1px solid #262b33;padding-top:9px;margin-top:9px">'
+     + '<div style="font-size:11px;color:#7ee787;margin-bottom:5px">'+esc(o.tag||('方案'+(i+1)))+'</div>'
+     + '<div style="background:#24272e;border-radius:12px;padding:9px 12px;font-size:14.5px;line-height:1.55;white-space:pre-wrap;word-break:break-word">'+esc(o.text||'')+'</div>'
+     + '<div style="font-size:11.5px;color:#9aa0a6;margin-top:7px;line-height:1.6">为什么：'+esc(o.why||'—')+'</div>'
+     + '<div style="font-size:11.5px;color:#9aa0a6;line-height:1.6">她可能回：'+esc(o.expect||'—')+'</div>'
+     + '<div style="font-size:11.5px;color:#9aa0a6;line-height:1.6">下一句：'+esc(o.next||'—')+'</div>'
+     + '<button class="back" data-ocopy="'+i+'" style="margin-top:7px">复制这句</button>'
+     + '</div>';
+  });
+  if(out.taboo && out.taboo.length){
+    h+='<div style="border-top:1px solid #262b33;padding-top:9px;margin-top:9px;font-size:11.5px;color:#ff8a80;line-height:1.7">禁忌：'+esc(out.taboo.join('；'))+'</div>';
+  }
+  h+='</div>';
+  box.innerHTML=h;
+  box.querySelectorAll('[data-ocopy]').forEach(function(b){
+    b.onclick=function(){
+      var t=((out.options||[])[parseInt(b.dataset.ocopy,10)]||{}).text||'';
+      if(navigator.clipboard){
+        navigator.clipboard.writeText(t).then(function(){
+          b.textContent='✅ 已复制';
+          setTimeout(function(){ b.textContent='复制这句'; },1500);
+        }).catch(function(){ uiMsg('复制失败，请手动选中复制：\n'+t, false, 0); });
+      }else{
+        uiMsg('请手动选中复制：\n'+t, false, 0);
+      }
+    };
+  });
+}
 
 $('sFactsBtn').onclick=async function(){
   const c=A(); if(!c) return;
   if(!c.dialog.length){ uiMsg('对话是空的，先用「她说了」「我发了」记录几条', false); return; }
-  const btn=this; btn.disabled=true; anaStat('提取中…');
+  const btn=this; btn.disabled=true; anaStat('提炼中…（v4-pro，约 20-40 秒）');
   try{
+    requireCloud('提炼人物画像');
     const d=dialogText(c,800);
-    const out=await callModel('deepseek-flash',
-`从下面的聊天记录里提取关于"她"的关键信息。宁缺毋滥。
+    const out=await callModel('deepseek-v4-pro',
+`你是人物分析专家。请对下面的聊天记录做一次【提炼】——不是摘字眼，是下结论。
 
-要求：
-1. 只输出最关键的 6-10 条，不要面面俱到。
-2. 每条一行，格式：维度：值（原话）
-3. 只收：年龄/生日/身高/体重/城市/职业单位/婚恋状态/家庭/作息/重要喜好/忌讳/口头禅。
-4. 一定带上"原话"括注，没有原话的不要写。
-5. 输出 JSON：{"lines":["身高：168（原话：我168）","城市：北京"]}
+输出一个字符串字段 text，分两层：
+
+【一、硬事实】
+- 只写能挂原话、可验证的信息：年龄/城市/职业/作息/家庭/喜好/忌讳/口头禅/称呼习惯
+- 每条一行，格式：维度：值（原话："……"）
+- 没有原话依据的一条都不要写，不要为了凑数编
+
+【二、画像提炼】（这是重点）
+用"结论句"写，不要堆形容词。每一条都必须挂依据（引用她的原话片段）：
+1. 核心动机：她真正在追求什么（能力感 / 身份感 / 情绪价值 / 安全感 / 纯找乐子）
+2. 情绪模式：什么时候热、什么时候冷；被忽视或被冒犯时具体怎么反应
+3. 安全感与不安全感：她在哪些话题上防御、哪些话题上放松
+4. 雷区成因：为什么某些话碰不得——写成"说 X 会让她觉得 Y"，而不是只写"别说 X"
+5. 她怎么定位我：依据她主动发起什么、索要什么、给我看什么
+6. 话题偏好：哪类话题她会自己延展，哪类她只回一两个字
+
+约束：
+- 硬事实 ≤10 条，画像 ≤6 条
+- 不确定的写"可能"，绝不编造
+- 禁止写"她是一个善良的人"这类没有依据的评价
+
+输出 JSON：{"text":"【硬事实】\\n…\\n\\n【画像提炼】\\n…"}
 
 聊天记录：
-${d}` , 800);
-    const lines=out.lines||[];
-    $('s_facts').value=lines.join('\n');
-    c.facts=$('s_facts').value; save();
-    anaStat('✅ 提取了 '+lines.length+' 条');
-  }catch(e){ anaStat('❌ '+e.message); }
+${d}` , 2500);
+    const text=(out&&out.text)||'';
+    if(!text) throw new Error('模型没返回内容');
+    $('s_facts').value=text;
+    c.facts=text; save();
+    anaStat('✅ 已提炼（硬事实 + 画像）');
+  }catch(e){ anaStat('❌ '+(e&&e.message?e.message:e)); }
   finally{ btn.disabled=false; }
 };
 
@@ -715,6 +1086,11 @@ $('sAnalyzeBtn').onclick=async function(){
   const c=A(); if(!c) return;
   if(!c.dialog.length){ uiMsg('对话是空的，先用「她说了」「我发了」记录几条', false); return; }
   const btn=this; btn.disabled=true;
+  if(isLocal()){
+    btn.disabled=false;
+    anaStat('⚠ 深度分析需要云端模型（本地 7B 会输出残缺 JSON）。请到 ⚙️ 把模型来源切回 DeepSeek 云端。');
+    return;
+  }
 
   const prev=lastSavedAna(c);
   const from = prev ? prev.to : 0;
@@ -724,7 +1100,7 @@ $('sAnalyzeBtn').onclick=async function(){
   anaStat('分析中：第 '+from+'→'+to+' 条（'+(to-from)+' 条新内容），约 20-40 秒…');
   try{
     const delta=c.dialog.slice(from,to).map(function(m){
-      return (m.who==='我'?'我':'她')+'：'+m.text+(m.note?'〔说明：'+m.note+'〕':'');
+      return fmtTs(m.ts)+(m.who==='我'?'我':'她')+'：'+m.text+(m.note?'〔说明：'+m.note+'〕':'');
     }).join('\n');
 
     const prevText = prev ? ('【上次分析结论】\n'+(prev.result.one_line||'')+'\n'+anaResultText(prev.result)) : '【这是第一次分析】';
@@ -749,6 +1125,14 @@ ${delta}
 2. 特别注意"说的 vs 做的"、口是心非、欲擒故纵、试探、回避。
 3. 如果新内容推翻了上次结论，明确说明哪里被推翻、为什么。
 4. 事实性内容（年龄/学历/恋情年份等）如与已知档案冲突，以用户纠正为准。
+
+【时间与节奏（必做，权重很高）】
+对话里每条消息前面的 [时间] 是真实发送时间，请单独判断"回复节奏"，并把结论写进 truth / position / pattern：
+- 谁先开口、谁收尾、谁更常主动发起
+- 她的回复间隔分布（秒回 / 几分钟 / 几小时 / 隔天），最近是变快还是变慢
+- 她活跃的时段（早/午/晚/深夜），是否有"睡前还在聊"这类高投入信号
+- 你回复的快慢对她热度的影响（你慢她变冷？你秒回她变淡？）
+- 若时间戳缺失较多，明确写"时间数据不足"，不要编造。
 
 输出 JSON：
 {"one_line":"一句话结论（30字内）",
@@ -788,8 +1172,20 @@ $('addBtn').onclick=function(){
     var c={id:'c'+Date.now(),name:n.trim(),age:'',area:'',platform:'微信',stage:0,goal:'维持热度',
       type:'',taboo:'',myrole:'',pattern:'',notes:'',hist:'',facts:'',dialog:[],analyses:[],corrections:[]};
     db.contacts.push(c); db.activeId=c.id; save(); renderSel(); renderLog();
-    if($('set').classList.contains('on')) loadSet();
     $('title').textContent=c.name;
+    /* 新建对象 = 还没开口。直接把用户带到「初次接触」那一栏，引导先看主页再生成开场白 */
+    _fitPanel($('set'));
+    loadSet();
+    $('set').classList.add('on');
+    switchTab('prof');
+    setTimeout(function(){
+      try{
+        var el=$('s_home');
+        $('set').scrollTop=Math.max(0, el.offsetTop-120);
+        el.focus();
+      }catch(_e){}
+      uiMsg('新对象建好了。第一条消息最关键 —— 先把她的主页/朋友圈贴进「初次接触」，再点「生成开场白」', false, 7000);
+    }, 260);
   });
 };
 
@@ -826,32 +1222,42 @@ $('batchX').onclick=function(){ $('batch').classList.remove('on'); };
 $('batchCancel').onclick=function(){ $('batch').classList.remove('on'); };
 $('batchText').oninput=function(){
   var r=parseBatch(this.value);
-  $('batchInfo').textContent = r.length? ('识别出 '+r.length+' 条消息') : '';
+  var withTs=r.filter(function(m){ return m.ts; }).length;
+  $('batchInfo').textContent = r.length
+    ? ('识别出 '+r.length+' 条消息'+(withTs? ('，其中 '+withTs+' 条带时间 ✅') : '，⚠ 没识别到时间（回复快慢将无法分析）'))
+    : '';
 };
 function parseBatch(txt){
   var nick=(db.myNick||'李四').trim();
-  var out=[], cur=null;
+  var out=[], cur=null, pendingTs='';
   var lines=txt.split(/\r?\n/);
   for(var li=0; li<lines.length; li++){
     var line=lines[li];
     if(!line.trim()) continue;
 
-    // 格式A：她：xxx / 我：xxx（可带时间戳前缀）
-    var mA=line.match(/^\s*(?:\d{4}[-\/]\d{1,2}[-\/]\d{1,2}\s+)?(?:\d{1,2}:\d{2}(?::\d{2})?\s+)?(她|我|对方|他|女方|男方)\s*[:：]\s*(.*)$/);
+    /* 0) 单独一行的时间（微信/截图导出常见）：
+          "2026-11-04 16:30" / "16:30" / "昨天 21:03" / "星期二 14:20" / "下午 4:30"
+          它会作为后面消息的时间，直到出现新的时间行 */
+    var mT=line.match(/^\s*((?:\d{4}[-\/]\d{1,2}[-\/]\d{1,2}\s+)?(?:昨天|今天|前天|星期[一二三四五六日天]\s*)?(?:上午|下午|中午|晚上|凌晨|早上)?\s*\d{1,2}:\d{2}(?::\d{2})?)\s*$/);
+    if(mT){ pendingTs=mT[1].trim(); continue; }
+
+    /* 格式A：她：xxx / 我：xxx（可带日期时间前缀） */
+    var mA=line.match(/^\s*((?:\d{4}[-\/]\d{1,2}[-\/]\d{1,2}\s+)?(?:\d{1,2}:\d{2}(?::\d{2})?\s+)?)(她|我|对方|他|女方|男方)\s*[:：]\s*(.*)$/);
     if(mA){
-      var whoA=(mA[1]==='我'||mA[1]==='男方')?'我':'她';
-      cur={who:whoA,text:mA[2].trim(),ts:''};
+      var whoA=(mA[2]==='我'||mA[2]==='男方')?'我':'她';
+      var tsA=(mA[1]||'').trim() || pendingTs;
+      cur={who:whoA,text:mA[3].trim(),ts:tsA};
       if(cur.text) out.push(cur); else cur=null;
       continue;
     }
 
-    // 格式B：微信原始格式 —— 名字 + 时间行（如 "张三 2026-11-04 16:30" 或 "张三 16:30"）
-    var mB=line.match(/^\s*(.{1,20}?)\s+(?:\d{4}[-\/]\d{1,2}[-\/]\d{1,2}\s+)?\d{1,2}:\d{2}(?::\d{2})?\s*$/);
+    /* 格式B：微信原始格式 —— 名字 + 时间行（"张三 2026-11-04 16:30" / "张三 16:30"） */
+    var mB=line.match(/^\s*(.{1,20}?)\s+((?:\d{4}[-\/]\d{1,2}[-\/]\d{1,2}\s+)?(?:昨天|今天|前天|星期[一二三四五六日天]\s*)?(?:上午|下午|中午|晚上|凌晨|早上)?\s*\d{1,2}:\d{2}(?::\d{2})?)\s*$/);
     if(mB){
       var name=mB[1].trim();
       // 排除包含冒号的普通句子
       if(name.indexOf('：')<0 && name.indexOf(':')<0 && name.length>0){
-        cur={who: (name===nick?'我':'她'), text:'', ts:''};
+        cur={who: (name===nick?'我':'她'), text:'', ts:(mB[2]||'').trim()};
         out.push(cur);   // 先占位，后面的文本行填进去
         continue;
       }
@@ -924,11 +1330,21 @@ async function visionExtract(dataUrl){
 `这是一张手机聊天截图（可能是 Soul 或微信；如果很高，它是长截图切成的一段，首尾可能不完整）。请把里面的聊天消息按顺序提取出来。
 
 要求：
-1. 只提取对话气泡里的正文，忽略时间、状态栏、按钮、昵称头像、输入框。
+1. 每条消息给出三项：谁说的、时间、正文。
 2. 判断说话人：昵称是"${nick}"或右侧绿色气泡/自己的消息 = "我"；对方 = "她"。
-3. 语音消息写成 [语音]；图片写成 [图片]；表情包写成 [表情]；撤回写成 [撤回]。
-4. 不要编造，看不清就用 [看不清]。
-5. 只输出 JSON：{"messages":[{"who":"她","text":"..."},{"who":"我","text":"..."}]}`},
+3. 非文字消息必须【描述内容】，不要只写占位符：
+   - 表情包 → [表情包：捂脸笑] / [表情包：白眼] / [表情包：猫咪问号]（描述表情和情绪）
+   - 图片 → [图片：餐桌上的螃蟹和两瓶啤酒]（描述画面内容）
+   - 语音 → [语音 6秒]
+   - 视频 → [视频 15秒]
+   - 转账/红包 → [转账 52.00]
+   - 撤回 → [撤回]
+   - 引用回复 → 正文前加 「引用：被引用的原话 | 」
+4. 时间 ts：照截图上显示的原样填（如 "16:30"、"昨天 21:03"、"星期二 14:20"、"2026-11-04 16:30"）。
+   截图里没有可见时间戳的就填空字符串 ""，不要猜。
+5. 忽略状态栏、按钮、输入框、自己的头像。
+6. 不要编造，看不清就写 [看不清]。
+7. 只输出 JSON：{"messages":[{"who":"她","ts":"16:30","text":"..."},{"who":"我","ts":"","text":"..."}]}`},
         {type:'image_url',image_url:{url:dataUrl}}
       ]
     }],
@@ -950,16 +1366,16 @@ $('importImgBtn').onclick=function(){
   if(!db.apiKey){ uiMsg('先在设置里填 DeepSeek API Key（⚙️ → 密钥与数据）', false); return; }
   $('imgFiles').click();
 };
-$('imgFiles').onchange=async function(e){
-  var files=Array.prototype.slice.call(e.target.files||[]);
-  e.target.value='';
+/* ---------- 截图导入主流程（文件选择 / 直接粘贴 共用） ---------- */
+async function importImageFiles(files){
+  files=Array.prototype.slice.call(files||[]);
   if(!files.length) return;
   const c=A(); if(!c){ stat('⚠ 先在左边选一个对象', true); return; }
   if(!(await uiConfirm('将用 AI 识别 '+files.length+' 张截图（长图会自动切段）并导入到「'+c.name+'」，继续？', '开始识别'))){
     stat('已取消识别');
     return;
   }
-  var total=0, fail=0, calls=0;
+  var total=0, dup=0, fail=0, calls=0;
   for(var i=0;i<files.length;i++){
     try{
       var slices=await fileToSlices(files[i]);
@@ -967,26 +1383,47 @@ $('imgFiles').onchange=async function(e){
         calls++;
         stat('识别中：第 '+(i+1)+' 张，第 '+(k+1)+'/'+slices.length+' 段…');
         var msgs=await visionExtract(slices[k]);
-        var tail=c.dialog.slice(-4).map(function(m){ return m.who+'|'+m.text; });
-        msgs.forEach(function(m){
-          if(!m || !m.text) return;
-          var key=m.who+'|'+m.text;
-          if(tail.indexOf(key)>=0) return;   // 去掉重叠段重复
-          c.dialog.push({who:(m.who==='我'?'我':'她'), text:m.text, ts:''});
-          tail.push(key); total++;
+        msgs=(msgs||[]).filter(function(m){ return m && m.text && String(m.text).trim(); });
+        /* 去掉与已有对话尾部的重叠部分（相邻截图 / 长图切段都会重叠） */
+        var fresh=_dropOverlap(c.dialog, msgs);
+        dup += (msgs.length - fresh.length);
+        fresh.forEach(function(m){
+          c.dialog.push({who:(m.who==='我'?'我':'她'), text:m.text, ts:(m.ts||'')});
         });
+        total += fresh.length;
         save(); renderLog();
       }
     }catch(err){ fail++; console.log(err); }
   }
   renderSel();
-  stat('✅ 导入 '+total+' 条（'+calls+' 次识别）'+(fail?('，'+fail+' 张失败'):''));
+  stat('✅ 导入 '+total+' 条'+(dup?('，去重 '+dup+' 条'):'')+'（'+calls+' 次识别）'+(fail?('，'+fail+' 张失败'):''));
+}
+
+$('imgFiles').onchange=function(e){
+  var files=Array.prototype.slice.call(e.target.files||[]);
+  e.target.value='';
+  importImageFiles(files);
 };
+
+/* 小窗模式下最省事：截完图直接粘进页面（Ctrl+V / 长按粘贴 / 右键粘贴） */
+document.addEventListener('paste', function(ev){
+  if(!ev.clipboardData) return;
+  var items=ev.clipboardData.items||[], imgs=[];
+  for(var i=0;i<items.length;i++){
+    if(items[i].kind==='file' && /^image\//i.test(items[i].type||'')){
+      var f=items[i].getAsFile();
+      if(f) imgs.push(f);
+    }
+  }
+  if(!imgs.length) return;      /* 不是图片就交回给默认粘贴行为 */
+  ev.preventDefault();
+  importImageFiles(imgs);
+});
 
 renderSel(); renderLog();
 
 /* 自动检测新版本 */
-const APP_VER='39';
+const APP_VER='49';
 (function checkUpdate(){
   function go(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -1145,9 +1582,18 @@ function loadSet(){
   const c=A();
   $('s_api').value=db.apiKey||'';
   $('s_nick').value=db.myNick||'李四';
+  $('s_provider').value=db.provider||'deepseek';
+  $('s_ollama_url').value=db.ollamaUrl||'';
+  $('s_ollama_model').value=db.ollamaModel||'';
+  $('localCfg').style.display=(db.provider==='ollama'?'block':'none');
+  var vm=document.getElementById('verMode');
+  if(vm) vm.textContent = ' · 模型：'+(isLocal()?'🔥 本地狂暴':'DeepSeek 云端');
   if(!c) return;
   $('s_name').value=c.name||''; $('s_age').value=c.age||'';
   $('s_area').value=c.area||''; $('s_platform').value=c.platform||'';
+  $('s_home').value=c.home||'';
+  renderOpener(c.opener);
+  $('openMsg').textContent='';
   $('s_stage').value=c.stage||0; updateStageLabel();
   $('s_goal').value=c.goal||'维持热度';
   $('s_type').value=c.type||''; $('s_taboo').value=c.taboo||'';
@@ -1160,8 +1606,12 @@ function saveSet(){
   const c=A();
   db.apiKey=$('s_api').value.trim();
   db.myNick=($('s_nick').value||'李四').trim();
+  db.provider=$('s_provider').value;
+  db.ollamaUrl=$('s_ollama_url').value.trim();
+  db.ollamaModel=$('s_ollama_model').value.trim();
   if(c){
     c.name=$('s_name').value; c.age=$('s_age').value; c.area=$('s_area').value;
+    c.home=$('s_home').value;
     c.platform=$('s_platform').value; c.stage=parseInt($('s_stage').value)||0;
     c.goal=$('s_goal').value;
     c.type=$('s_type').value; c.taboo=$('s_taboo').value;
@@ -1187,6 +1637,38 @@ $('sClose').onclick=function(){ $('set').classList.remove('on'); };
 $('sClose2').onclick=function(){ $('set').classList.remove('on'); };
 $('sSave').onclick=saveSet;
 $('sSave2').onclick=saveSet;
+/* 模型来源切换：选本地时展开配置，并提示当前页面能不能用 */
+$('s_provider').onchange=function(){
+  var local=(this.value==='ollama');
+  $('localCfg').style.display=(local?'block':'none');
+  var lm=$('localMsg');
+  if(local){
+    if(location.protocol==='https:'){
+      lm.style.color='#ff8a80';
+      lm.textContent='⚠ 当前是 https 页面，浏览器会拦掉对本机 http://127.0.0.1 的请求。要用狂暴模式，请在电脑上打开 http://localhost:8000/';
+    }else{
+      lm.style.color='#7ee787';
+      lm.textContent='当前 '+(location.protocol==='http:'?'http':'file')+' 页面，可以连本机 Ollama。首次用先点「测试本地连接」';
+    }
+  }else{
+    lm.textContent='';
+  }
+};
+/* 测试本地 Ollama 是否在跑 */
+$('sTestLocal').onclick=async function(){
+  var lm=$('localMsg'); lm.style.color='#7ee787'; lm.textContent='测试中…';
+  var u=($('s_ollama_url').value.trim()||'http://127.0.0.1:11434/v1').replace(/\/+$/,'');
+  try{
+    var r=await fetch(u+'/models',{cache:'no-store'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    var j=await r.json();
+    var names=((j&&j.data)||[]).map(function(x){ return x.id; });
+    lm.textContent='✅ 连上了。本地可用模型：'+(names.length?names.join('、'):'（空，先 ollama pull 一个）');
+  }catch(e){
+    lm.style.color='#ff8a80';
+    lm.textContent='❌ 连不上：'+(e&&e.message?e.message:e)+'\n检查：① Ollama 是否在运行 ② 地址端口对不对 ③ 本页是不是 http 打开的';
+  }
+};
 $('sExport').onclick=function(){ exportBackup(); };
 $('encGo').onclick=function(){ if(_encMode==='export') _encDoExport(); else _encDoImport(); };
 $('encCancel').onclick=_encHide;
