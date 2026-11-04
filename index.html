@@ -37,7 +37,7 @@ header button{background:#22252b;border:0;color:#c8ccd2;border-radius:10px;paddi
 #main{display:flex;flex-direction:column;flex:1;min-width:0}
 #title{flex:1;font-size:15px;color:#e6e6e6;text-align:center;font-weight:bold}
 #menuBtn{display:block}
-#batch{position:fixed;inset:0;background:#0f1115;z-index:10;display:none;overflow-y:auto;padding:14px}
+#batch{position:fixed;inset:0;background:#0f1115;z-index:10;display:none;overflow-y:auto;padding:14px;border:1px solid #2f3540;border-radius:18px;box-shadow:0 22px 70px rgba(0,0,0,.7)}
 #batch.on{display:block}
 #batch textarea{width:100%;background:#22252b;color:#e6e6e6;border:1px solid #33363d;border-radius:10px;padding:10px;font-size:14px;font-family:inherit;line-height:1.6}
 #batch .ok{margin-top:12px;width:100%;padding:14px;border:0;border-radius:12px;background:#2e7d32;color:#fff;font-size:16px;font-weight:bold}
@@ -74,10 +74,10 @@ footer .mini.her{color:#8fd3ff}
 #extraBtn.on{background:#2f3742;color:#c8ccd2}
 #extraWrap textarea{height:132px;margin-top:6px;font-size:15px;line-height:1.55}
 #stat{padding:0 2px 6px;font-size:13px;color:#7ee787;min-height:16px}
-#set{position:fixed;inset:0;background:#0f1115;z-index:9;display:none;overflow-y:auto;padding:14px}
+#set{position:fixed;inset:0;background:#0f1115;z-index:9;display:none;overflow-y:auto;padding:14px;border:1px solid #2f3540;border-radius:18px;box-shadow:0 22px 70px rgba(0,0,0,.7)}
 #set.on{display:block}
 #set h3{font-size:16px;margin:0 0 12px}
-#set .setbar{position:sticky;top:0;z-index:3;background:#0f1115;display:flex;justify-content:space-between;align-items:center;padding:4px 0 12px;margin-top:-4px}
+#set .setbar{position:sticky;top:0;z-index:3;background:#0f1115;display:flex;justify-content:space-between;align-items:center;padding:4px 0 12px;margin-top:-4px;border-radius:18px 18px 0 0}
 #set .setbar b{font-size:16px}
 #set #setX{background:#2e7d32;color:#fff;border:0;border-radius:10px;padding:9px 14px;font-size:14px;font-weight:bold}
 #set label{display:block;font-size:12px;color:#8a9099;margin:14px 0 5px}
@@ -149,14 +149,24 @@ footer .mini.her{color:#8fd3ff}
   </div>
 </div>
 
+<!-- 内嵌提示条：替代 alert / confirm / prompt（部分浏览器会静默拦截原生对话框） -->
+<div id="uiBar" style="display:none;position:fixed;left:0;right:0;bottom:0;z-index:9999;background:#1b1e24;border-top:2px solid #3a4150;padding:12px 14px;box-shadow:0 -6px 24px rgba(0,0,0,.55)">
+  <div id="uiBarMsg" style="font-size:13px;color:#e3e6ea;line-height:1.75;white-space:pre-wrap;margin-bottom:10px"></div>
+  <input id="uiBarInput" type="text" style="display:none;margin-bottom:10px" autocomplete="off">
+  <div style="display:flex;gap:8px">
+    <button id="uiBarOk" style="flex:1">确定</button>
+    <button id="uiBarCancel" style="flex:1">取消</button>
+  </div>
+</div>
+
 <div id="batch">
   <div class="setbar"><b>批量导入对话</b><button id="batchX">✕ 关闭</button></div>
   <div style="font-size:12.5px;color:#9aa0a6;line-height:1.8;margin-bottom:10px">
     <b>支持两种格式：</b><br><br>
     <b>① 微信原始格式</b>（PC 微信拖选复制出来的样子）：<br>
-    <code>锦瑟 2026-11-04 16:30</code><br>
+    <code>张三 2026-11-04 16:30</code><br>
     <code>刚睡醒</code><br>
-    <code>饭炒蛋 2026-11-04 16:31</code><br>
+    <code>李四 2026-11-04 16:31</code><br>
     <code>陛下在上早朝？</code><br><br>
     <b>② 简化格式</b>（自己整理时用）：<br>
     <code>她：刚睡醒</code><br>
@@ -180,15 +190,42 @@ footer .mini.her{color:#8fd3ff}
     <label>DeepSeek API Key（sk- 开头）</label>
     <input id="s_api" placeholder="sk-..." type="password" autocomplete="off">
     <label>我的微信昵称（导入对话时区分谁说的）</label>
-    <input id="s_nick" placeholder="饭炒蛋">
+    <input id="s_nick" placeholder="我的昵称">
     <button class="ok" id="sSave">保存</button>
-    <button class="back" id="sExport">导出档案（备份到本地）</button>
+    <button class="back" id="sExport">导出档案（加密备份）</button>
     <button class="back" id="sImport">导入档案（选 JSON 文件）</button>
     <input type="file" id="sFile" accept=".json" style="display:none">
+    <div id="encPanel" style="display:none;border:1px solid #3a4150;border-radius:10px;padding:12px;margin:8px 0">
+      <div id="encHint" style="font-size:12.5px;color:#c9cdd4;line-height:1.7;margin-bottom:8px"></div>
+      <input id="encPw1" type="password" placeholder="密码（至少 6 位）" autocomplete="new-password">
+      <input id="encPw2" type="password" placeholder="再输一次确认" autocomplete="new-password">
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#9aa0a6;margin:2px 0 8px;cursor:pointer">
+        <input type="checkbox" id="encShow" style="width:auto;margin:0"> 👁 显示密码（方便核对输错没）
+      </label>
+      <div id="encMsg" style="font-size:12px;min-height:16px;margin:6px 0"></div>
+      <a id="encDl" style="display:none;background:#1f6feb;color:#fff;text-align:center;padding:10px;border-radius:8px;text-decoration:none;font-weight:600;margin-bottom:8px">💾 下载加密备份（点这里保存）</a>
+      <button class="ok" id="encGo">确定</button>
+      <button class="back" id="encCancel">取消</button>
+    </div>
     <button class="back" id="sClear">清空当前对象的对话</button>
+    <button class="back" id="sDel" style="color:#ff8a80">🗑 删除联系记录（可多选）</button>
+    <div id="delPanel" style="display:none;border:1px solid #3a4150;border-radius:10px;padding:12px;margin:8px 0">
+      <div style="font-size:12.5px;color:#c9cdd4;line-height:1.7;margin-bottom:8px">勾选要处理的对象（可单选 / 多选）</div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;margin-bottom:6px;cursor:pointer">
+        <input type="checkbox" id="delAll" style="width:auto;margin:0"> <b>全选</b>
+        <span id="delCount" style="color:#6b7078;font-size:11.5px">未选</span>
+      </label>
+      <div id="delList" style="max-height:220px;overflow:auto;border:1px solid #262b33;border-radius:8px;margin-bottom:10px"></div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#ff8a80;margin-bottom:10px;cursor:pointer">
+        <input type="checkbox" id="delAlsoContact" style="width:auto;margin:0"> 连对象本身一起删除（档案也去掉）
+      </label>
+      <button class="ok" id="delGo">删除选中</button>
+      <button class="back" id="delCancel">取消</button>
+    </div>
+    <button class="back" id="sClearAll" style="color:#ff8a80">⚠ 清空全部数据（含 API Key）</button>
     <button class="back" id="sClose">关闭</button>
     <div style="font-size:12px;color:#5d6673;margin-top:14px;line-height:1.8">
-      版本 <span id="ver">v28</span> · <a href="javascript:location.reload(true)" style="color:#8fb8ff">强制刷新</a><br>
+      版本 <span id="ver">v39</span> · <a href="javascript:location.reload(true)" style="color:#8fb8ff">强制刷新</a><br>
       数据只存在本机浏览器，不上传。
     </div>
   </div>
@@ -324,6 +361,8 @@ function renderSel(){
       db.activeId=c.id; save(); renderSel(); renderLog();
       $('result').classList.remove('on');
       $('title').textContent=c.name||'未命名';
+      /* 设置面板开着的时候切换对象，表单要跟着换成新对象的，否则保存会写错人 */
+      if($('set').classList.contains('on')) loadSet();
       if(window.innerWidth<720) $('side').classList.remove('open');
     };
     box.appendChild(d);
@@ -344,11 +383,12 @@ function renderLog(){
     const note=m.note?'<div class="nt">📝 '+esc(m.note)+'</div>':'';
     d.innerHTML='<div><div class="b">'+esc(m.text)+'</div>'+note+'</div>';
     d.querySelector('.b').onclick=function(){
-      var v=prompt('给这条消息加说明（表情包/语音/背景；留空删除）', m.note||'');
-      if(v===null) return;
-      v=v.trim();
-      if(v){ m.note=v; } else { delete m.note; }
-      save(); renderLog();
+      uiPrompt('给这条消息加说明（表情包/语音/背景；留空 = 删除说明）', m.note||'').then(function(v){
+        if(v===null) return;
+        v=v.trim();
+        if(v){ m.note=v; } else { delete m.note; }
+        save(); renderLog();
+      });
     };
     log.appendChild(d);
   });
@@ -378,17 +418,86 @@ function renderResult(data){
         const cc=A(); if(cc){ cc.dialog.push({who:'我',text:t,ts:now()}); save(); renderLog(); }
         setTimeout(function(){ b.textContent='复制这句'; },1800);
       };
-      if(navigator.clipboard){ navigator.clipboard.writeText(t).then(done).catch(function(){ alert('复制失败，手动长按选中：\n'+t); }); }
-      else { alert('请手动复制：\n'+t); }
+      if(navigator.clipboard){ navigator.clipboard.writeText(t).then(done).catch(function(){ uiMsg('复制失败，请手动长按选中这条：\n'+t, false, 0); }); }
+      else { uiMsg('请手动长按复制：\n'+t, false, 0); }
     };
   });
 }
 function stat(t,bad){const s=$('stat');s.textContent=t;s.style.color=bad?'#ff8a80':'#7ee787';}
 
+/* ---------- 内嵌提示条：替代 alert / confirm / prompt ----------
+   原因：部分浏览器（或"阻止此页面创建更多对话框"）会静默吞掉原生对话框，
+   导致操作失败却毫无反馈。下面三个函数全部用页面内元素实现。 */
+var _uiResolve=null, _uiTimer=null;
+function _uiHide(){
+  if(_uiTimer){ clearTimeout(_uiTimer); _uiTimer=null; }
+  $('uiBar').style.display='none';
+  $('uiBarOk').textContent='确定';
+  $('uiBarCancel').style.display='block';
+  $('uiBarInput').style.display='none';
+}
+function uiMsg(msg, ok, ms){
+  _uiResolve=null;
+  if(_uiTimer){ clearTimeout(_uiTimer); _uiTimer=null; }
+  $('uiBar').style.display='block';
+  $('uiBarMsg').textContent=msg;
+  $('uiBarMsg').style.color = ok?'#7ee787':'#ff8a80';
+  $('uiBarInput').style.display='none';
+  $('uiBarOk').textContent='知道了';
+  $('uiBarOk').style.display='block';
+  $('uiBarCancel').style.display='none';
+  _uiTimer=setTimeout(function(){ _uiHide(); }, (ms==null?5000:ms));
+}
+function uiConfirm(msg, okText){
+  return new Promise(function(resolve){
+    if(_uiTimer){ clearTimeout(_uiTimer); _uiTimer=null; }
+    _uiResolve=resolve;
+    $('uiBar').style.display='block';
+    $('uiBarMsg').textContent=msg;
+    $('uiBarMsg').style.color='#e3e6ea';
+    $('uiBarInput').style.display='none';
+    $('uiBarOk').textContent=okText||'确定';
+    $('uiBarOk').style.display='block';
+    $('uiBarCancel').style.display='block';
+  });
+}
+function uiPrompt(msg, def){
+  return new Promise(function(resolve){
+    if(_uiTimer){ clearTimeout(_uiTimer); _uiTimer=null; }
+    _uiResolve=resolve;
+    $('uiBar').style.display='block';
+    $('uiBarMsg').textContent=msg;
+    $('uiBarMsg').style.color='#e3e6ea';
+    var inp=$('uiBarInput');
+    inp.type='text';
+    inp.value=(def==null?'':def);
+    inp.style.display='block';
+    $('uiBarOk').textContent='确定';
+    $('uiBarOk').style.display='block';
+    $('uiBarCancel').style.display='block';
+    setTimeout(function(){ try{ inp.focus(); inp.select(); }catch(_e){} },50);
+  });
+}
+$('uiBarOk').onclick=function(){
+  var r=_uiResolve, inp=$('uiBarInput');
+  var val=(inp.style.display!=='none')?inp.value:true;
+  _uiResolve=null; _uiHide();
+  if(r) r(val);
+};
+$('uiBarCancel').onclick=function(){
+  var r=_uiResolve;
+  _uiResolve=null; _uiHide();
+  if(r) r(null);
+};
+$('uiBarInput').onkeydown=function(e){
+  if(e.key==='Enter'){ e.preventDefault(); $('uiBarOk').click(); }
+  else if(e.key==='Escape'){ e.preventDefault(); $('uiBarCancel').click(); }
+};
+
 function addMsg(who){
-  const c=A(); if(!c) return;
+  const c=A(); if(!c){ stat('⚠ 先在左边建一个对象（点「＋」），再记录消息', true); return; }
   const t=$('msg').value.trim();
-  if(!t) return alert('输入框是空的，先把消息粘贴或输入进来');
+  if(!t){ stat('⚠ 输入框是空的，先把消息粘贴或输入进来', true); return; }
   c.dialog.push({who:who,text:t,ts:now()});
   $('msg').value='';
   const ex=$('extra'); if(ex) ex.value='';
@@ -435,8 +544,8 @@ async function callAPI(prompt){
 }
 
 $('go').onclick=async function(){
-  const c=A(); if(!c) return;
-  if(!c.dialog.length) return alert('对话是空的，先用「她说了」「我发了」记录几条');
+  const c=A(); if(!c){ stat('⚠ 先在左边建一个对象（点「＋」）', true); return; }
+  if(!c.dialog.length){ stat('⚠ 对话是空的，先用「她说了」「我发了」记录几条', true); return; }
 
   const extraEl=$('extra');
   const extraText=extraEl?extraEl.value.trim():'';
@@ -501,7 +610,7 @@ function anaStat(t){ const e=document.getElementById('anaMsg'); if(e) e.textCont
 
 $('sFactsBtn').onclick=async function(){
   const c=A(); if(!c) return;
-  if(!c.dialog.length) return alert('对话是空的');
+  if(!c.dialog.length){ uiMsg('对话是空的，先用「她说了」「我发了」记录几条', false); return; }
   const btn=this; btn.disabled=true; anaStat('提取中…');
   try{
     const d=dialogText(c,800);
@@ -513,7 +622,7 @@ $('sFactsBtn').onclick=async function(){
 2. 每条一行，格式：维度：值（原话）
 3. 只收：年龄/生日/身高/体重/城市/职业单位/婚恋状态/家庭/作息/重要喜好/忌讳/口头禅。
 4. 一定带上"原话"括注，没有原话的不要写。
-5. 输出 JSON：{"lines":["身高：168（原话：我168）","城市：贵州"]}
+5. 输出 JSON：{"lines":["身高：168（原话：我168）","城市：北京"]}
 
 聊天记录：
 ${d}` , 800);
@@ -582,13 +691,14 @@ function renderAnaHistory(){
         b.textContent = el.classList.contains('on') ? '收起' : '查看';
       }
       if(b.dataset.act==='fb'){
-        var v=prompt('指出这次分析哪里不准（会作为纠正意见喂给下次分析）：', '');
-        if(v===null) return;
-        v=v.trim(); if(!v) return;
-        x.feedback=(x.feedback?x.feedback+'；':'')+v;
-        c.corrections=c.corrections||[];
-        c.corrections.push({ts:now(), text:v});
-        save(); renderAnaHistory(); anaStat('✅ 已记录纠正');
+        uiPrompt('指出这次分析哪里不准（会作为纠正意见喂给下次分析）', '').then(function(v){
+          if(v===null) return;
+          v=v.trim(); if(!v) return;
+          x.feedback=(x.feedback?x.feedback+'；':'')+v;
+          c.corrections=c.corrections||[];
+          c.corrections.push({ts:now(), text:v});
+          save(); renderAnaHistory(); anaStat('✅ 已记录纠正');
+        });
       }
     };
   });
@@ -603,7 +713,7 @@ function renderAnaHistory(){
 
 $('sAnalyzeBtn').onclick=async function(){
   const c=A(); if(!c) return;
-  if(!c.dialog.length) return alert('对话是空的');
+  if(!c.dialog.length){ uiMsg('对话是空的，先用「她说了」「我发了」记录几条', false); return; }
   const btn=this; btn.disabled=true;
 
   const prev=lastSavedAna(c);
@@ -656,7 +766,7 @@ ${delta}
  "myrole":"我的定位（多行）",
  "pattern":"互动模式（多行）"}` , 3000);
 
-    const ok=confirm('【结论】'+(out.one_line||'')+'\n\n【真实心理】'+(out.truth||'')+'\n\n【变化】'+(out.changed||'无')+'\n\n点「确定」=保存并写入档案（下次从这里继续）；点「取消」=只留记录不保存（下次会把这段重新纳入）');
+    const ok=await uiConfirm('【结论】'+(out.one_line||'')+'\n\n【真实心理】'+(out.truth||'')+'\n\n【变化】'+(out.changed||'无')+'\n\n点「保存并写入档案」= 下次从这里继续；\n点「取消」= 只留记录不保存（下次会把这段重新纳入）', '保存并写入档案');
     c.analyses=c.analyses||[];
     c.analyses.push({ts:now(), from:from, to:to, saved:!!ok, rating:0, feedback:'', result:out});
     if(ok){
@@ -673,12 +783,14 @@ ${delta}
 
 $('menuBtn').onclick=function(){ $('side').classList.toggle('open'); };
 $('addBtn').onclick=function(){
-  var n=prompt('新对象的名字（备注即可）');
-  if(!n) return;
-  var c={id:'c'+Date.now(),name:n.trim(),age:'',area:'',platform:'微信',stage:0,goal:'维持热度',
-    type:'',taboo:'',myrole:'',pattern:'',notes:'',hist:'',facts:'',dialog:[],analyses:[],corrections:[]};
-  db.contacts.push(c); db.activeId=c.id; save(); renderSel(); renderLog();
-  $('title').textContent=c.name;
+  uiPrompt('新对象的名字（备注即可）', '').then(function(n){
+    if(!n) return;
+    var c={id:'c'+Date.now(),name:n.trim(),age:'',area:'',platform:'微信',stage:0,goal:'维持热度',
+      type:'',taboo:'',myrole:'',pattern:'',notes:'',hist:'',facts:'',dialog:[],analyses:[],corrections:[]};
+    db.contacts.push(c); db.activeId=c.id; save(); renderSel(); renderLog();
+    if($('set').classList.contains('on')) loadSet();
+    $('title').textContent=c.name;
+  });
 };
 
 function loadBackup(obj){
@@ -687,7 +799,6 @@ function loadBackup(obj){
     var cs=d.contacts||d;
     if(!Array.isArray(cs)||!cs.length) throw new Error('里面没有对象数据');
     db.contacts=cs;
-    if(d.apiKey) db.apiKey=d.apiKey;
     db.activeId=cs[0].id;
     db.contacts.forEach(function(c){
       if(typeof c.stage==='string'){
@@ -696,8 +807,21 @@ function loadBackup(obj){
         c.stage=idx;
       }
       if(typeof c.stage!=='number') c.stage=0;
+      /* 兼容旧格式 / 不完整备份：补齐必需字段，避免导入后渲染崩溃 */
+      if(!c.id) c.id='c'+Date.now()+Math.floor(Math.random()*1000);
+      if(!Array.isArray(c.dialog)) c.dialog=[];
+      if(!Array.isArray(c.analyses)) c.analyses=[];
+      if(!Array.isArray(c.corrections)) c.corrections=[];
     });
-    save(); $('importChatBtn').onclick=function(){ $('batch').classList.add('on'); $('batchText').focus(); };
+    save();
+    /* 导入后必须刷新界面：联系人列表、对话区、设置表单
+       （否则设置面板还是旧对象的表单值，一点「保存」就会写到新对象身上） */
+    renderSel(); renderLog(); loadSet();
+    stat('✅ 导入成功：'+cs.length+' 个对象'+(d.apiKey?'（备份里的 API Key 已忽略）':''));
+  }catch(e){ stat('导入失败：'+e.message, true); }
+}
+
+$('importChatBtn').onclick=function(){ _fitPanel($('batch')); $('batch').classList.add('on'); $('batchText').focus(); };
 $('batchX').onclick=function(){ $('batch').classList.remove('on'); };
 $('batchCancel').onclick=function(){ $('batch').classList.remove('on'); };
 $('batchText').oninput=function(){
@@ -705,7 +829,7 @@ $('batchText').oninput=function(){
   $('batchInfo').textContent = r.length? ('识别出 '+r.length+' 条消息') : '';
 };
 function parseBatch(txt){
-  var nick=(db.myNick||'饭炒蛋').trim();
+  var nick=(db.myNick||'李四').trim();
   var out=[], cur=null;
   var lines=txt.split(/\r?\n/);
   for(var li=0; li<lines.length; li++){
@@ -721,7 +845,7 @@ function parseBatch(txt){
       continue;
     }
 
-    // 格式B：微信原始格式 —— 名字 + 时间行（如 "锦瑟 2026-11-04 16:30" 或 "锦瑟 16:30"）
+    // 格式B：微信原始格式 —— 名字 + 时间行（如 "张三 2026-11-04 16:30" 或 "张三 16:30"）
     var mB=line.match(/^\s*(.{1,20}?)\s+(?:\d{4}[-\/]\d{1,2}[-\/]\d{1,2}\s+)?\d{1,2}:\d{2}(?::\d{2})?\s*$/);
     if(mB){
       var name=mB[1].trim();
@@ -740,11 +864,14 @@ function parseBatch(txt){
   return out.filter(function(m){ return m.text && m.text.trim(); });
 }
 
-$('batchDo').onclick=function(){
-  const c=A(); if(!c) return alert('先选一个对象');
+$('batchDo').onclick=async function(){
+  const c=A(); if(!c){ stat('⚠ 先在左边选一个对象', true); return; }
   var arr=parseBatch($('batchText').value);
-  if(!arr.length) return alert('没识别出消息，检查格式（每行用「她：」「我：」开头）');
-  if(!confirm('将导入 '+arr.length+' 条到「'+c.name+'」，追加到现有对话末尾？')) return;
+  if(!arr.length){ uiMsg('没识别出消息，检查格式：每行用「她：」「我：」开头', false); return; }
+  if(!(await uiConfirm('将导入 '+arr.length+' 条到「'+c.name+'」，追加到现有对话末尾？', '导入'))){
+    stat('已取消导入');
+    return;
+  }
   c.dialog=c.dialog.concat(arr);
   save(); renderLog(); renderSel();
   $('batchText').value=''; $('batchInfo').textContent='';
@@ -787,7 +914,7 @@ async function fileToSlices(file, maxW, segH, overlap){
   return out;
 }
 async function visionExtract(dataUrl){
-  var nick=(db.myNick||'饭炒蛋').trim();
+  var nick=(db.myNick||'李四').trim();
   var body={
     model:'deepseek-flash',
     messages:[{
@@ -820,15 +947,18 @@ async function visionExtract(dataUrl){
   return JSON.parse(t).messages||[];
 }
 $('importImgBtn').onclick=function(){
-  if(!db.apiKey) return alert('先填 API Key');
+  if(!db.apiKey){ uiMsg('先在设置里填 DeepSeek API Key（⚙️ → 密钥与数据）', false); return; }
   $('imgFiles').click();
 };
 $('imgFiles').onchange=async function(e){
   var files=Array.prototype.slice.call(e.target.files||[]);
   e.target.value='';
   if(!files.length) return;
-  const c=A(); if(!c) return alert('先选一个对象');
-  if(!confirm('将用 AI 识别 '+files.length+' 张截图（长图会自动切段）并导入到「'+c.name+'」，继续？')) return;
+  const c=A(); if(!c){ stat('⚠ 先在左边选一个对象', true); return; }
+  if(!(await uiConfirm('将用 AI 识别 '+files.length+' 张截图（长图会自动切段）并导入到「'+c.name+'」，继续？', '开始识别'))){
+    stat('已取消识别');
+    return;
+  }
   var total=0, fail=0, calls=0;
   for(var i=0;i<files.length;i++){
     try{
@@ -856,7 +986,7 @@ $('imgFiles').onchange=async function(e){
 renderSel(); renderLog();
 
 /* 自动检测新版本 */
-const APP_VER='22';
+const APP_VER='39';
 (function checkUpdate(){
   function go(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -877,16 +1007,134 @@ const APP_VER='22';
     if(document.visibilityState==='visible') go();
   });
 })(); loadSet();
-    alert('导入成功：'+cs.length+' 个对象');
-  }catch(e){ alert('导入失败：'+e.message); }
+/* ---------- 加密备份（WebCrypto AES-GCM + PBKDF2） ----------
+   格式: {fmt:'chatapp-enc', v:1, iter, salt, iv, ct}
+   加密只在本机浏览器内完成，密码不上传、不存储。忘记密码无法找回。 */
+function _hasCrypt(){
+  return !!(window.crypto && window.crypto.subtle && window.crypto.getRandomValues);
 }
-function exportBackup(){
-  var out={contacts:db.contacts};
-  var b=new Blob([JSON.stringify(out,null,2)],{type:'application/json'});
+function _b64(buf){
+  var bytes=new Uint8Array(buf), s='', CH=0x8000;
+  for(var i=0;i<bytes.length;i+=CH){ s+=String.fromCharCode.apply(null, bytes.subarray(i,i+CH)); }
+  return btoa(s);
+}
+function _unb64(str){
+  var bin=atob(str), arr=new Uint8Array(bin.length);
+  for(var i=0;i<bin.length;i++){ arr[i]=bin.charCodeAt(i); }
+  return arr;
+}
+async function _deriveKey(pw, saltBytes, iter){
+  var base=await crypto.subtle.importKey('raw', new TextEncoder().encode(pw),
+      {name:'PBKDF2'}, false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+      {name:'PBKDF2', salt:saltBytes, iterations:iter, hash:'SHA-256'},
+      base, {name:'AES-GCM', length:256}, false, ['encrypt','decrypt']);
+}
+async function encryptBackup(obj, pw){
+  var iter=200000;
+  var salt=crypto.getRandomValues(new Uint8Array(16));
+  var iv=crypto.getRandomValues(new Uint8Array(12));
+  var key=await _deriveKey(pw, salt, iter);
+  var ct=await crypto.subtle.encrypt({name:'AES-GCM', iv:iv, tagLength:128},
+      key, new TextEncoder().encode(JSON.stringify(obj)));
+  return JSON.stringify({
+    fmt:'chatapp-enc', v:1, alg:'AES-GCM-256', kdf:'PBKDF2-SHA256',
+    iter:iter, salt:_b64(salt), iv:_b64(iv), ct:_b64(ct)
+  }, null, 1);
+}
+async function decryptBackup(env, pw){
+  var key=await _deriveKey(pw, _unb64(env.salt), env.iter||200000);
+  var pt=await crypto.subtle.decrypt({name:'AES-GCM', iv:_unb64(env.iv), tagLength:128},
+      key, _unb64(env.ct));
+  return new TextDecoder().decode(pt);
+}
+function _downloadText(text, filename){
+  var b=new Blob([text],{type:'application/json'});
   var a=document.createElement('a');
   a.href=URL.createObjectURL(b);
-  a.download='聊天档案_'+new Date().toISOString().slice(0,10)+'.json';
+  a.download=filename;
+  a.style.display='none';
+  document.body.appendChild(a);
   a.click();
+  setTimeout(function(){
+    try{ document.body.removeChild(a); URL.revokeObjectURL(a.href); }catch(_e){}
+  },1500);
+}
+function _stamp(){ return new Date().toISOString().slice(0,10); }
+
+/* ---------- 加密备份 UI：页面内嵌，不依赖 prompt/confirm/alert ----------
+   原因：部分浏览器（或被勾选的"阻止此页面创建更多对话框"）会静默吞掉对话框，
+   导致"点备份没反应却不报错"。备份是数据安全底线，失败必须可见。 */
+var _encMode='export', _encEnv=null;
+function _encShow(mode, hint, btnText){
+  _encMode=mode;
+  $('encHint').textContent=hint;
+  $('encPw1').value=''; $('encPw2').value=''; $('encMsg').textContent='';
+  $('encShow').checked=false;
+  $('encPw1').type='password'; $('encPw2').type='password';
+  $('encPw2').style.display=(mode==='export'?'block':'none');
+  $('encGo').textContent=btnText;
+  $('encDl').style.display='none';
+  $('encPanel').style.display='block';
+  try{ $('encPw1').focus(); }catch(_e){}
+}
+function _encHide(){
+  $('encPanel').style.display='none';
+  $('encPw1').value=''; $('encPw2').value='';
+  var dl=$('encDl');
+  dl.style.display='none';
+  if(dl.__url){ try{ URL.revokeObjectURL(dl.__url); }catch(_e){} dl.__url=null; }
+}
+function _encInfo(t, ok){
+  var e=$('encMsg'); e.textContent=t||''; e.style.color=(ok?'#7ee787':'#ff8a80');
+}
+
+async function exportBackup(){
+  _encEnv=null;
+  if(!_hasCrypt()){
+    stat('⚠ 当前环境不支持加密（需要 https 或 localhost），无法导出', true);
+    return;
+  }
+  _encShow('export','给备份设一个密码（至少 6 位）。密码不保存、不上传；忘了就打不开，没有找回办法。','开始加密导出');
+}
+
+async function _encDoExport(){
+  var pw=$('encPw1').value, pw2=$('encPw2').value;
+  if(pw.length<6){ _encInfo('密码至少 6 位。',false); $('encPw1').focus(); return; }
+  if(pw!==pw2){ _encInfo('两次输入不一致，请重新输入。',false); $('encPw2').value=''; $('encPw2').focus(); return; }
+  _encInfo('加密中…（约 1 秒）',true);
+  try{
+    var env=await encryptBackup({contacts:db.contacts}, pw);
+    var fname='聊天档案_'+_stamp()+'_加密.json';
+    /* 主通道：面板里给一个真链接，用户手动点击 = 真实用户手势，浏览器不会拦 */
+    var blob=new Blob([env],{type:'application/json'});
+    var dl=$('encDl');
+    if(dl.__url){ try{ URL.revokeObjectURL(dl.__url); }catch(_e){} }
+    dl.__url=URL.createObjectURL(blob);
+    dl.href=dl.__url; dl.download=fname; dl.style.display='block';
+    /* 次通道：自动触发一次下载（可能被浏览器静默拦截） */
+    _downloadText(env, fname);
+    _encInfo('✅ 加密完成。若没有自动弹出保存，请点上面蓝色按钮「💾 下载加密备份」。文件名：'+fname,true);
+    stat('✅ 加密完成 —— 请确认文件真的存下来了');
+  }catch(e){
+    _encInfo('加密失败：'+(e&&e.message?e.message:e),false);
+    stat('加密失败',true);
+  }
+}
+
+async function _encDoImport(){
+  if(!_encEnv){ _encInfo('没有待导入的文件，请重新选择。',false); return; }
+  var pw=$('encPw1').value;
+  if(!pw){ _encInfo('请输入密码。',false); $('encPw1').focus(); return; }
+  _encInfo('解密中…',true);
+  try{
+    var plain=await decryptBackup(_encEnv, pw);
+    _encHide(); _encEnv=null;
+    loadBackup(plain);
+  }catch(e){
+    _encInfo('解密失败：密码错误，或文件已损坏。',false);
+    $('encPw1').value=''; $('encPw1').focus();
+  }
 }
 
 function updateStageLabel(){
@@ -896,7 +1144,7 @@ function updateStageLabel(){
 function loadSet(){
   const c=A();
   $('s_api').value=db.apiKey||'';
-  $('s_nick').value=db.myNick||'饭炒蛋';
+  $('s_nick').value=db.myNick||'李四';
   if(!c) return;
   $('s_name').value=c.name||''; $('s_age').value=c.age||'';
   $('s_area').value=c.area||''; $('s_platform').value=c.platform||'';
@@ -911,7 +1159,7 @@ function loadSet(){
 function saveSet(){
   const c=A();
   db.apiKey=$('s_api').value.trim();
-  db.myNick=($('s_nick').value||'饭炒蛋').trim();
+  db.myNick=($('s_nick').value||'李四').trim();
   if(c){
     c.name=$('s_name').value; c.age=$('s_age').value; c.area=$('s_area').value;
     c.platform=$('s_platform').value; c.stage=parseInt($('s_stage').value)||0;
@@ -933,28 +1181,161 @@ function switchTab(which){
 $('tabData').onclick=function(){ switchTab('data'); };
 $('tabProf').onclick=function(){ switchTab('prof'); };
 $('s_stage').oninput=updateStageLabel;
-$('setBtn').onclick=function(){ loadSet(); $('set').classList.add('on'); switchTab('prof'); };
+$('setBtn').onclick=function(){ _fitPanel($('set')); loadSet(); $('set').classList.add('on'); switchTab('prof'); };
 $('setX').onclick=function(){ $('set').classList.remove('on'); };
 $('sClose').onclick=function(){ $('set').classList.remove('on'); };
 $('sClose2').onclick=function(){ $('set').classList.remove('on'); };
 $('sSave').onclick=saveSet;
 $('sSave2').onclick=saveSet;
 $('sExport').onclick=function(){ exportBackup(); };
+$('encGo').onclick=function(){ if(_encMode==='export') _encDoExport(); else _encDoImport(); };
+$('encCancel').onclick=_encHide;
+$('encShow').onchange=function(){
+  var t=this.checked?'text':'password';
+  $('encPw1').type=t; $('encPw2').type=t;
+};
 $('sImport').onclick=function(){ $('sFile').click(); };
 $('sFile').onchange=function(e){
   var f=e.target.files[0]; if(!f) return;
   var r=new FileReader();
-  r.onload=function(){ loadBackup(r.result); e.target.value=''; };
+  r.onload=async function(){
+    var txt=r.result; e.target.value='';
+    var parsed=null;
+    try{ parsed=JSON.parse(txt); }catch(_e){}
+    /* 加密备份：交给页面内嵌面板处理密码 */
+    if(parsed && parsed.fmt==='chatapp-enc'){
+      if(!_hasCrypt()){ stat('⚠ 环境不支持解密（需要 https 或 localhost）', true); return; }
+      _encEnv=parsed;
+      _encShow('import','这个备份已加密。请输入导出时设置的密码：','解密并导入');
+      return;
+    }
+    /* 明文备份（旧格式）：照旧导入 */
+    loadBackup(txt);
+  };
   r.readAsText(f);
 };
-$('sClear').onclick=function(){
-  const c=A(); if(!c) return;
-  if(!confirm('清空和「'+c.name+'」的对话记录？')) return;
-  c.dialog=[]; save(); renderLog(); stat('已清空');
+$('sClear').onclick=async function(){
+  const c=A(); if(!c){ stat('⚠ 先在左边选一个对象', true); return; }
+  if(!(await uiConfirm('清空和「'+c.name+'」的对话记录？（档案保留）', '清空对话'))){ stat('已取消'); return; }
+  c.dialog=[]; save(); renderLog(); stat('已清空该对象的对话');
+};
+$('sClearAll').onclick=async function(){
+  if(!(await uiConfirm('⚠ 这会删掉：所有对象档案 + 全部对话记录 + 本机保存的 API Key。\n\n删了就没了，只能靠之前导出的备份恢复。\n\n建议先点「导出档案」存一份。\n\n继续？', '我要清空'))){ stat('已取消'); return; }
+  if(!(await uiConfirm('再确认一次：真的要清空全部数据吗？', '确认清空'))){ stat('已取消'); return; }
+  localStorage.removeItem(KEY);
+  location.reload();
 };
 
+/* ---------- 删除联系记录（多选） ---------- */
+var _delPick={};
+function _delShow(){
+  _delPick={};
+  $('delAlsoContact').checked=false;
+  $('delPanel').style.display='block';
+  _delRender();
+}
+function _delRender(){
+  var box=$('delList'), cs=db.contacts||[];
+  if(!cs.length){
+    box.innerHTML='<div style="font-size:12px;color:#6b7078;padding:10px">还没有任何对象</div>';
+    return;
+  }
+  var h='';
+  cs.forEach(function(c){
+    var n=(c.dialog||[]).length;
+    h+='<label style="display:flex;align-items:center;gap:8px;padding:9px 8px;border-bottom:1px solid #262b33;cursor:pointer">'
+     + '<input type="checkbox" class="delcb" data-id="'+esc(c.id)+'"'+(_delPick[c.id]?' checked':'')+' style="width:auto;margin:0">'
+     + '<span style="flex:1;font-size:13px;color:#e3e6ea">'+esc(c.name||'未命名')+'</span>'
+     + '<span style="font-size:11.5px;color:'+(n?'#7ee787':'#6b7078')+'">'+(n?n+' 条对话':'无对话')+'</span>'
+     + '</label>';
+  });
+  box.innerHTML=h;
+  box.querySelectorAll('.delcb').forEach(function(cb){
+    cb.onchange=function(){
+      if(cb.checked){ _delPick[cb.dataset.id]=true; } else { delete _delPick[cb.dataset.id]; }
+      _delSyncAll();
+    };
+  });
+  _delSyncAll();
+}
+function _delSyncAll(){
+  var boxes=Array.prototype.slice.call(document.querySelectorAll('.delcb'));
+  var checked=boxes.filter(function(b){ return b.checked; }).length;
+  $('delAll').checked = (boxes.length>0 && checked===boxes.length);
+  $('delAll').indeterminate = (checked>0 && checked<boxes.length);
+  $('delCount').textContent = checked ? ('已选 '+checked+' 个') : '未选';
+  $('delGo').textContent = checked ? ('删除选中的 '+checked+' 个') : '删除选中';
+}
+$('sDel').onclick=_delShow;
+$('delCancel').onclick=function(){ $('delPanel').style.display='none'; };
+$('delAll').onchange=function(){
+  var on=this.checked;
+  document.querySelectorAll('.delcb').forEach(function(cb){
+    cb.checked=on;
+    if(on){ _delPick[cb.dataset.id]=true; } else { delete _delPick[cb.dataset.id]; }
+  });
+  _delSyncAll();
+};
+$('delGo').onclick=async function(){
+  var ids=Object.keys(_delPick);
+  if(!ids.length){ uiMsg('先勾选要处理的对象（可以点上面的「全选」）', false); return; }
+  var alsoContact=$('delAlsoContact').checked;
+  var names=db.contacts.filter(function(c){ return _delPick[c.id]; }).map(function(c){ return '· '+(c.name||'未命名'); }).join('\n');
+  var msg = alsoContact
+    ? '将删除这 '+ids.length+' 个对象（档案 + 全部对话）：\n\n'+names+'\n\n对象本身也会消失，不可撤销。'
+    : '将清空这 '+ids.length+' 个对象的对话记录（档案保留）：\n\n'+names+'\n\n不可撤销。';
+  if(!(await uiConfirm(msg, alsoContact?'确认删除对象':'确认清空对话'))){ stat('已取消'); return; }
+  if(alsoContact){
+    db.contacts=db.contacts.filter(function(c){ return !_delPick[c.id]; });
+    var stillExists = db.contacts.some(function(c){ return c.id===db.activeId; });
+    if(!stillExists){ db.activeId = db.contacts.length ? db.contacts[0].id : null; }
+  }else{
+    db.contacts.forEach(function(c){ if(_delPick[c.id]){ c.dialog=[]; } });
+  }
+  save();
+  $('delPanel').style.display='none';
+  _delPick={};
+  renderSel(); renderLog(); loadSet();
+  stat('✅ 已'+(alsoContact?('删除 '+ids.length+' 个对象'):('清空 '+ids.length+' 个对象的对话')));
+};
+
+/* 让全屏浮层（设置 / 批量导入）贴合聊天区 #main 的矩形，
+   而不是铺满整个浏览器窗口（宽屏上会显得巨大）。 */
+function _fitPanel(el){
+  if(!el) return;
+  var m=$('main');
+  if(!m){
+    el.style.left='8px'; el.style.top='8px';
+    el.style.width='calc(100vw - 16px)'; el.style.height='calc(100dvh - 16px)';
+    el.style.right='auto'; el.style.bottom='auto';
+    return;
+  }
+  var r=m.getBoundingClientRect(), pad=10;
+  /* 宽度：聊天区的 4/3（宽 1/3），但不超出窗口 */
+  var w=Math.min(window.innerWidth-pad*2, Math.round(r.width*(4/3)));
+  var left=Math.round(r.left-(w-r.width)/2);
+  if(left<pad) left=pad;
+  if(left+w>window.innerWidth-pad) left=window.innerWidth-pad-w;
+  /* 高度：略矮于聊天区，四周留边 → 卡片感 */
+  var h=Math.min(window.innerHeight-pad*2, r.height-pad*2);
+  var top=Math.round(r.top+(r.height-h)/2);
+  if(top<pad) top=pad;
+  el.style.left=left+'px';
+  el.style.top=top+'px';
+  el.style.width=w+'px';
+  el.style.height=h+'px';
+  el.style.right='auto';
+  el.style.bottom='auto';
+}
+function _fitOpenPanels(){
+  if($('set').classList.contains('on')) _fitPanel($('set'));
+  if($('batch').classList.contains('on')) _fitPanel($('batch'));
+}
+window.addEventListener('resize', _fitOpenPanels);
+window.addEventListener('orientationchange', function(){ setTimeout(_fitOpenPanels,150); });
+
 renderSel(); renderLog();
-if(!db.apiKey) setTimeout(function(){ alert('第一次用：点右上角 ⚙️，填 DeepSeek API Key（sk- 开头）'); },600);
+if(!db.apiKey) setTimeout(function(){ uiMsg('第一次用：点右上角 ⚙️ → 密钥与数据，填 DeepSeek API Key（sk- 开头）', false, 0); },600);
 </script>
 <script>
 /* 一次性清除旧的 Service Worker 与缓存（此版本之后不再注册 SW） */
