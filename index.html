@@ -150,11 +150,16 @@ footer .mini.her{color:#8fd3ff}
 <div id="batch">
   <div class="setbar"><b>批量导入对话</b><button id="batchX">✕ 关闭</button></div>
   <div style="font-size:12.5px;color:#9aa0a6;line-height:1.8;margin-bottom:10px">
-    把聊天记录整段粘进来，每行一条，用「她：」「我：」开头。<br>
-    例：<br>
+    <b>支持两种格式：</b><br><br>
+    <b>① 微信原始格式</b>（PC 微信拖选复制出来的样子）：<br>
+    <code>锦瑟 2026-11-04 16:30</code><br>
+    <code>刚睡醒</code><br>
+    <code>饭炒蛋 2026-11-04 16:31</code><br>
+    <code>陛下在上早朝？</code><br><br>
+    <b>② 简化格式</b>（自己整理时用）：<br>
     <code>她：刚睡醒</code><br>
-    <code>我：陛下在上早朝？</code><br>
-    没有前缀的行会接在上一条后面。时间戳（如 16:30）会自动剥掉。
+    <code>我：陛下在上早朝？</code><br><br>
+    昵称和「我的微信昵称」一致的算"我说的"，其他算"她说的"。
   </div>
   <textarea id="batchText" rows="12" placeholder="她：xxx&#10;我：xxx&#10;她：xxx"></textarea>
   <div id="batchInfo" style="font-size:12px;color:#7ee787;margin-top:8px;min-height:16px"></div>
@@ -172,6 +177,8 @@ footer .mini.her{color:#8fd3ff}
   <div id="paneData" style="display:none">
     <label>DeepSeek API Key（sk- 开头）</label>
     <input id="s_api" placeholder="sk-..." type="password" autocomplete="off">
+    <label>我的微信昵称（导入对话时区分谁说的）</label>
+    <input id="s_nick" placeholder="饭炒蛋">
     <button class="ok" id="sSave">保存</button>
     <button class="back" id="sExport">导出档案（备份到本地）</button>
     <button class="back" id="sImport">导入档案（选 JSON 文件）</button>
@@ -179,7 +186,7 @@ footer .mini.her{color:#8fd3ff}
     <button class="back" id="sClear">清空当前对象的对话</button>
     <button class="back" id="sClose">关闭</button>
     <div style="font-size:12px;color:#5d6673;margin-top:14px;line-height:1.8">
-      版本 <span id="ver">v25</span> · <a href="javascript:location.reload(true)" style="color:#8fb8ff">强制刷新</a><br>
+      版本 <span id="ver">v26</span> · <a href="javascript:location.reload(true)" style="color:#8fb8ff">强制刷新</a><br>
       数据只存在本机浏览器，不上传。
     </div>
   </div>
@@ -696,20 +703,41 @@ $('batchText').oninput=function(){
   $('batchInfo').textContent = r.length? ('识别出 '+r.length+' 条消息') : '';
 };
 function parseBatch(txt){
+  var nick=(db.myNick||'饭炒蛋').trim();
   var out=[], cur=null;
-  txt.split(/\r?\n/).forEach(function(line){
-    if(!line.trim()) return;
-    var m=line.match(/^\s*(?:\d{4}[-\/]\d{1,2}[-\/]\d{1,2}\s+)?(?:\d{1,2}:\d{2}(?::\d{2})?\s+)?(她|我|对方|他|女方|男方)\s*[:：]\s*(.*)$/);
-    if(m){
-      var who = (m[1]==='我'||m[1]==='男方') ? '我' : '她';
-      cur={who:who,text:m[2].trim(),ts:''};
+  var lines=txt.split(/\r?\n/);
+  for(var li=0; li<lines.length; li++){
+    var line=lines[li];
+    if(!line.trim()) continue;
+
+    // 格式A：她：xxx / 我：xxx（可带时间戳前缀）
+    var mA=line.match(/^\s*(?:\d{4}[-\/]\d{1,2}[-\/]\d{1,2}\s+)?(?:\d{1,2}:\d{2}(?::\d{2})?\s+)?(她|我|对方|他|女方|男方)\s*[:：]\s*(.*)$/);
+    if(mA){
+      var whoA=(mA[1]==='我'||mA[1]==='男方')?'我':'她';
+      cur={who:whoA,text:mA[2].trim(),ts:''};
       if(cur.text) out.push(cur); else cur=null;
-    } else {
-      if(cur) cur.text += (cur.text?' ':'') + line.trim();
+      continue;
     }
-  });
-  return out;
+
+    // 格式B：微信原始格式 —— 名字 + 时间行（如 "锦瑟 2026-11-04 16:30" 或 "锦瑟 16:30"）
+    var mB=line.match(/^\s*(.{1,20}?)\s+(?:\d{4}[-\/]\d{1,2}[-\/]\d{1,2}\s+)?\d{1,2}:\d{2}(?::\d{2})?\s*$/);
+    if(mB){
+      var name=mB[1].trim();
+      // 排除包含冒号的普通句子
+      if(name.indexOf('：')<0 && name.indexOf(':')<0 && name.length>0){
+        cur={who: (name===nick?'我':'她'), text:'', ts:''};
+        out.push(cur);   // 先占位，后面的文本行填进去
+        continue;
+      }
+    }
+
+    // 普通文本行：接到上一条
+    if(cur){ cur.text += (cur.text?' ':'') + line.trim(); }
+  }
+  // 丢掉空文本的占位
+  return out.filter(function(m){ return m.text && m.text.trim(); });
 }
+
 $('batchDo').onclick=function(){
   const c=A(); if(!c) return alert('先选一个对象');
   var arr=parseBatch($('batchText').value);
@@ -765,6 +793,7 @@ function updateStageLabel(){
 function loadSet(){
   const c=A();
   $('s_api').value=db.apiKey||'';
+  $('s_nick').value=db.myNick||'饭炒蛋';
   if(!c) return;
   $('s_name').value=c.name||''; $('s_age').value=c.age||'';
   $('s_area').value=c.area||''; $('s_platform').value=c.platform||'';
@@ -779,6 +808,7 @@ function loadSet(){
 function saveSet(){
   const c=A();
   db.apiKey=$('s_api').value.trim();
+  db.myNick=($('s_nick').value||'饭炒蛋').trim();
   if(c){
     c.name=$('s_name').value; c.age=$('s_age').value; c.area=$('s_area').value;
     c.platform=$('s_platform').value; c.stage=parseInt($('s_stage').value)||0;
