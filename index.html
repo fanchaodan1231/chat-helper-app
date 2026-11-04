@@ -70,6 +70,15 @@ footer .mini.her{color:#8fd3ff}
 #set .stab.on{background:#2e7d32;color:#fff;border-color:#2e7d32}
 #set input[type=range]{padding:0;margin:8px 0 4px;accent-color:#2e7d32;height:26px}
 #set .scale{display:flex;justify-content:space-between;font-size:10px;color:#6b7078;margin-bottom:10px}
+#set .anaitem{border:1px solid #2a2f37;border-radius:10px;padding:10px;margin-top:8px;background:#16181d}
+#set .aitop{font-size:14px;color:#e6e6e6;line-height:1.5}
+#set .aimeta{font-size:11px;color:#7d838a;margin-top:5px}
+#set .aibody{display:none;font-size:12.5px;color:#b9bdc2;line-height:1.7;margin-top:8px;white-space:pre-wrap}
+#set .aibody.on{display:block}
+#set .airow{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+#set .airow button{padding:7px 10px;border:0;border-radius:8px;background:#2a2d33;color:#c8ccd2;font-size:12px}
+#set .airow select{padding:6px;border-radius:8px;background:#22252b;color:#e6e6e6;border:1px solid #33363d;font-size:12px;width:auto}
+#set .aifb{width:100%;margin-top:6px;background:#22252b;color:#e6e6e6;border:1px solid #33363d;border-radius:8px;padding:8px;font-size:12.5px}
 #set .sechead{margin:22px 0 8px;font-size:13px;color:#cfe3d0;font-weight:bold;border-left:3px solid #2e7d32;padding-left:8px}
 </style>
 </head>
@@ -118,7 +127,7 @@ footer .mini.her{color:#8fd3ff}
     <button class="back" id="sClear">清空当前对象的对话</button>
     <button class="back" id="sClose">关闭</button>
     <div style="font-size:12px;color:#5d6673;margin-top:14px;line-height:1.8">
-      版本 <span id="ver">v23</span> · <a href="javascript:location.reload(true)" style="color:#8fb8ff">强制刷新</a><br>
+      版本 <span id="ver">v24</span> · <a href="javascript:location.reload(true)" style="color:#8fb8ff">强制刷新</a><br>
       数据只存在本机浏览器，不上传。
     </div>
   </div>
@@ -169,8 +178,10 @@ footer .mini.her{color:#8fd3ff}
     <div class="sechead">关键信息（自动提取，可手改）</div>
     <textarea id="s_facts" rows="6" placeholder="点下面「提取关键信息」自动填：身高、体重、年龄、生日、地址、职业、家庭、作息、喜好、忌讳…"></textarea>
     <button class="back" id="sFactsBtn">🔍 从对话提取关键信息</button>
-    <button class="back" id="sAnalyzeBtn">🧠 深度分析人物（看穿口是心非）</button>
+    <button class="back" id="sAnalyzeBtn">🧠 增量深度分析（v4-pro）</button>
     <div id="anaMsg" style="font-size:12px;color:#7ee787;margin-top:6px;min-height:14px"></div>
+    <div class="sechead">分析历史（可评分/评论，评论会喂给下次分析）</div>
+    <div id="anaHistory"></div>
 
     <button class="ok" id="sSave2">保存</button>
     <button class="back" id="sClose2">关闭</button>
@@ -418,88 +429,169 @@ $('sFactsBtn').onclick=async function(){
   if(!c.dialog.length) return alert('对话是空的');
   const btn=this; btn.disabled=true; anaStat('提取中…');
   try{
-    const d=dialogText(c,1500);
-    const out=await callModel('deepseek-v4-pro',
-`下面是我和一个女生的聊天记录。请从中提取关于"她"的客观事实与稳定特征，只提取记录里真实出现或可高置信推断的内容。
+    const d=dialogText(c,800);
+    const out=await callModel('deepseek-flash',
+`从下面的聊天记录里提取关于"她"的关键信息。宁缺毋滥。
+
 要求：
-1. 输出 JSON：{"facts":[{"k":"身高","v":"167cm","evidence":"原话","conf":0.9},...]}
-2. 可能的维度：年龄、生日、身高、体重、三围、地址/城市、单位/职业、职务、收入线索、家庭成员、婚姻/恋爱史、作息、饮食偏好、运动习惯、健康、宠物、学历、兴趣、消费观、社交平台、口头禅。
-3. evidence 必须是聊天里的原话片段，找不到原话就留空。
-4. conf 是置信度 0-1；语气戏谑、开玩笑、夸张的说法要降置信度。
-5. 没有提到的维度不要编。
+1. 只输出最关键的 6-10 条，不要面面俱到。
+2. 每条一行，格式：维度：值（原话）
+3. 只收：年龄/生日/身高/体重/城市/职业单位/婚恋状态/家庭/作息/重要喜好/忌讳/口头禅。
+4. 一定带上"原话"括注，没有原话的不要写。
+5. 输出 JSON：{"lines":["身高：168（原话：我168）","城市：贵州"]}
 
 聊天记录：
-${d}` , 2000);
-    const lines=(out.facts||[]).map(function(f){
-      return f.k+'：'+f.v+(f.evidence?('（原话：'+f.evidence+'）'):'')+(f.conf!=null?('  [置信'+(Math.round(f.conf*100))+'%]'):'');
-    });
+${d}` , 800);
+    const lines=out.lines||[];
     $('s_facts').value=lines.join('\n');
     c.facts=$('s_facts').value; save();
-    anaStat('✅ 提取了 '+(out.facts||[]).length+' 条');
+    anaStat('✅ 提取了 '+lines.length+' 条');
   }catch(e){ anaStat('❌ '+e.message); }
   finally{ btn.disabled=false; }
 };
 
+function lastSavedAna(c){
+  const arr=(c.analyses||[]).filter(function(x){ return x.saved; });
+  return arr.length ? arr[arr.length-1] : null;
+}
+function anaResultText(r){
+  if(!r) return '';
+  const out=[];
+  if(r.truth) out.push('【真实心理】'+r.truth);
+  if(r.position) out.push('【她把我当】'+r.position);
+  if(r.obstacle) out.push('【最大阻碍】'+r.obstacle);
+  if(r.wants) out.push('【她最在意】'+(Array.isArray(r.wants)?r.wants.join('、'):r.wants));
+  if(r.fears) out.push('【她最怕】'+r.fears);
+  if(r.turn_on) out.push('【能打动她】'+r.turn_on);
+  if(r.turn_off) out.push('【会让她跑】'+r.turn_off);
+  (r.contradictions||[]).forEach(function(x){
+    out.push('· 她说「'+x.said+'」，实际'+x.did+' → '+x.meaning);
+  });
+  return out.join('\n');
+}
+function renderAnaHistory(){
+  const c=A(); const box=$('anaHistory'); if(!box||!c) return;
+  const list=(c.analyses||[]);
+  const corr=(c.corrections||[]);
+  let h='';
+  if(corr.length){
+    h+='<div style="font-size:12px;color:#e0a800;margin:4px 0 8px">📌 已记录纠正 '+corr.length+' 条（会一起发给模型）</div>';
+  }
+  if(!list.length){
+    box.innerHTML=h+'<div style="font-size:12px;color:#6b7078">还没有分析记录</div>';
+    return;
+  }
+  for(let idx=list.length-1; idx>=0; idx--){
+    const x=list[idx];
+    const stars = x.rating ? ('★'.repeat(x.rating)+'☆'.repeat(5-x.rating)) : '未评分';
+    h+='<div class="anaitem" data-i="'+idx+'">'
+     + '<div class="aitop">'+esc((x.result&&x.result.one_line)||'（无一句话结论）')+'</div>'
+     + '<div class="aimeta">'+esc(x.ts)+' · 第 '+x.from+'→'+x.to+' 条 · '+(x.saved?'已保存':'未保存')+' · '+stars+'</div>'
+     + '<div class="aibody" id="ab'+idx+'">'+esc(anaResultText(x.result))+'</div>'
+     + '<div class="airow">'
+     +   '<button data-act="toggle" data-i="'+idx+'">查看</button>'
+     +   '<select data-act="rate" data-i="'+idx+'">'
+     +     [0,1,2,3,4,5].map(function(v){ return '<option value="'+v+'"'+(x.rating===v?' selected':'')+'>'+(v?v+'★':'未评')+'</option>'; }).join('')
+     +   '</select>'
+     +   '<button data-act="fb" data-i="'+idx+'">加评论</button>'
+     + '</div>'
+     + '</div>';
+  }
+  box.innerHTML=h;
+  box.querySelectorAll('button').forEach(function(b){
+    b.onclick=function(){
+      const idx=parseInt(b.dataset.i), x=list[idx];
+      if(b.dataset.act==='toggle'){
+        const el=document.getElementById('ab'+idx);
+        el.classList.toggle('on');
+        b.textContent = el.classList.contains('on') ? '收起' : '查看';
+      }
+      if(b.dataset.act==='fb'){
+        var v=prompt('指出这次分析哪里不准（会作为纠正意见喂给下次分析）：', '');
+        if(v===null) return;
+        v=v.trim(); if(!v) return;
+        x.feedback=(x.feedback?x.feedback+'；':'')+v;
+        c.corrections=c.corrections||[];
+        c.corrections.push({ts:now(), text:v});
+        save(); renderAnaHistory(); anaStat('✅ 已记录纠正');
+      }
+    };
+  });
+  box.querySelectorAll('select').forEach(function(sel){
+    sel.onchange=function(){
+      const idx=parseInt(sel.dataset.i);
+      list[idx].rating=parseInt(sel.value)||0;
+      save(); renderAnaHistory();
+    };
+  });
+}
+
 $('sAnalyzeBtn').onclick=async function(){
   const c=A(); if(!c) return;
   if(!c.dialog.length) return alert('对话是空的');
-  const btn=this; btn.disabled=true; anaStat('深度分析中（约 20-40 秒）…');
+  const btn=this; btn.disabled=true;
+
+  const prev=lastSavedAna(c);
+  const from = prev ? prev.to : 0;
+  const to = c.dialog.length;
+  if(to<=from) { btn.disabled=false; return anaStat('没有新对话可分析（上次已分析到第'+from+'条）'); }
+
+  anaStat('分析中：第 '+from+'→'+to+' 条（'+(to-from)+' 条新内容），约 20-40 秒…');
   try{
-    const d=dialogText(c,1500);
+    const delta=c.dialog.slice(from,to).map(function(m){
+      return (m.who==='我'?'我':'她')+'：'+m.text+(m.note?'〔说明：'+m.note+'〕':'');
+    }).join('\n');
+
+    const prevText = prev ? ('【上次分析结论】\n'+(prev.result.one_line||'')+'\n'+anaResultText(prev.result)) : '【这是第一次分析】';
+    const corr=(c.corrections||[]).map(function(x){ return '· '+x.text; }).join('\n') || '无';
+    const base=`【已知档案】\n姓名：${c.name}｜${c.age}岁｜${c.area}｜${c.platform}\n关系阶段：${STAGES[c.stage]||'未知'}\n她的类型：${c.type||'未知'}\n我的定位：${c.myrole||'未知'}\n关键信息：${(c.facts||'无').replace(/\n/g,'；')}`;
+
     const out=await callModel('deepseek-v4-pro',
-`你是行为分析专家。下面是"我"和一个女生（${c.name}，${c.age}岁，${c.area}）从加好友到现在的聊天记录。
+`你是行为分析专家。请对一段"增量对话"做分析，并修正此前结论。
 
-任务：分析她真实的心理状态和行为模式，不要只是复述她说过的话。
+${base}
 
-方法要求：
-1. 区分"她说的"和"她做的"：她声称的偏好 vs 实际行为（谁主动、回复速度、投入程度、是否兑现）。
-2. 找矛盾点：口是心非、欲擒故纵、试探、回避、设防、情绪波动。要指出具体是哪几句体现的。
-3. 判断她对"我"的真实定位：聊天工具人 / 情绪出口 / 备胎 / 潜在对象 / 已当熟人但无感 / 有其他更优先目标。
-4. 判断当前最大的阻碍是什么（她自己？前一段关系？距离？我对她的吸引力不足？）。
-5. 给出她最在意什么、最怕什么、什么东西能打动她、什么东西会让她跑。
+${prevText}
+
+【用户此前指出的错误（必须改正）】
+${corr}
+
+【本轮新增对话（第${from}条到第${to}条）】
+${delta}
+
+分析方法：
+1. 只依据上面的增量内容 + 此前的已知信息，不要凭空编造。
+2. 特别注意"说的 vs 做的"、口是心非、欲擒故纵、试探、回避。
+3. 如果新内容推翻了上次结论，明确说明哪里被推翻、为什么。
+4. 事实性内容（年龄/学历/恋情年份等）如与已知档案冲突，以用户纠正为准。
 
 输出 JSON：
-{
- "one_line":"一句话结论（30字内）",
- "truth":"她的真实心理（200-300字，要有推导链条，不只复述）",
- "contradictions":[{"said":"她说的话","did":"实际表现","meaning":"这说明什么"}],
+{"one_line":"一句话结论（30字内）",
+ "truth":"她的真实心理（150-250字，含推导链）",
+ "changed":"相比上次结论有什么变化/被推翻的地方（没有就写无）",
+ "contradictions":[{"said":"","did":"","meaning":""}],
  "position":"她把我当什么（含依据）",
  "obstacle":"当前最大阻碍",
- "wants":"她最在意的三样",
+ "wants":"她最在意的三样（数组）",
  "fears":"她最怕的",
  "turn_on":"什么能打动她",
  "turn_off":"什么会让她跑",
- "type":"她的类型/性格（多行，可复制到档案）",
+ "type":"她的类型/性格（多行）",
  "taboo":"雷区（多行）",
- "myrole":"我对她的定位建议（多行）",
- "pattern":"互动模式（多行）"
-}
+ "myrole":"我的定位（多行）",
+ "pattern":"互动模式（多行）"}` , 3000);
 
-聊天记录：
-${d}`, 3000);
-    const fill=function(field, val){
-      if(val && (!c[field] || confirm('「'+field+'」已有内容，用分析结果覆盖？'))){ c[field]=val; }
-    };
-    const ok=confirm((out.one_line||'')+'\n\n'+(out.truth||'')+'\n\n是否把分析结果写入档案？');
+    const ok=confirm('【结论】'+(out.one_line||'')+'\n\n【真实心理】'+(out.truth||'')+'\n\n【变化】'+(out.changed||'无')+'\n\n点「确定」=保存并写入档案（下次从这里继续）；点「取消」=只留记录不保存（下次会把这段重新纳入）');
+    c.analyses=c.analyses||[];
+    c.analyses.push({ts:now(), from:from, to:to, saved:!!ok, rating:0, feedback:'', result:out});
     if(ok){
       if(out.type) c.type=out.type;
       if(out.taboo) c.taboo=out.taboo;
       if(out.myrole) c.myrole=out.myrole;
       if(out.pattern) c.pattern=out.pattern;
-      const extra=[];
-      if(out.position) extra.push('【她把我当】'+out.position);
-      if(out.obstacle) extra.push('【最大阻碍】'+out.obstacle);
-      if(out.wants) extra.push('【她最在意】'+(Array.isArray(out.wants)?out.wants.join('、'):out.wants));
-      if(out.fears) extra.push('【她最怕】'+out.fears);
-      if(out.turn_on) extra.push('【能打动她】'+out.turn_on);
-      if(out.turn_off) extra.push('【会让她跑】'+out.turn_off);
-      if((out.contradictions||[]).length){
-        extra.push('【矛盾点】');
-        out.contradictions.forEach(function(x){ extra.push('· 她说「'+x.said+'」，实际'+x.did+' → '+x.meaning); });
-      }
-      c.notes=(c.notes||'')+'\n\n'+extra.join('\n');
-      save(); loadSet(); anaStat('✅ 分析完成，已写入档案');
-    } else { anaStat('已取消写入'); }
+    }
+    save(); loadSet(); renderAnaHistory();
+    anaStat(ok?'✅ 已保存（下次从第'+to+'条继续）':'已留档未保存（下次会重新纳入这段）');
   }catch(e){ anaStat('❌ '+e.message); }
   finally{ btn.disabled=false; }
 };
@@ -578,6 +670,7 @@ function loadSet(){
   $('s_myrole').value=c.myrole||''; $('s_pattern').value=c.pattern||'';
   $('s_notes').value=c.notes||''; $('s_hist').value=c.hist||'';
   $('s_facts').value=c.facts||'';
+  renderAnaHistory();
 }
 function saveSet(){
   const c=A();
