@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#0f1115">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>聊天助手</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{font-family:-apple-system,"Microsoft YaHei",sans-serif;background:#0f1115;color:#e6e6e6;
+  display:flex;flex-direction:column;font-size:16px;max-width:560px;margin:0 auto;min-height:100dvh;
+  border-left:1px solid #1c1f25;border-right:1px solid #1c1f25}
+header{flex:0 0 auto;display:flex;align-items:center;gap:8px;
+  padding:calc(10px + env(safe-area-inset-top)) 14px 10px;background:#181a1f;
+  border-bottom:1px solid #262b33;position:sticky;top:0;z-index:5}
+header select{flex:1;background:#22252b;color:#e6e6e6;border:1px solid #33363d;border-radius:10px;padding:10px;font-size:15px}
+header button{background:#22252b;border:0;color:#c8ccd2;border-radius:10px;padding:10px 12px;font-size:16px}
+#updBanner{display:none;background:#1f6feb;color:#fff;text-align:center;padding:10px;font-size:14px;font-weight:bold;cursor:pointer}
+#log{flex:1;overflow-y:auto;padding:12px 14px;min-height:60px}
+.m{display:flex;margin:6px 0}
+.m.me{justify-content:flex-end}
+.b{max-width:80%;padding:9px 12px;border-radius:14px;line-height:1.55;font-size:15px;white-space:pre-wrap;word-break:break-word;cursor:pointer}
+.m.her .b{background:#24272e;border-bottom-left-radius:4px}
+.m.me .b{background:#2e7d32;border-bottom-right-radius:4px}
+.nt{font-size:12px;color:#b8a04a;margin-top:4px;line-height:1.5;max-width:80%;white-space:pre-wrap;word-break:break-word}
+.hint{color:#5d626a;font-size:13px;text-align:center;margin:18px 0;line-height:1.8}
+#result{flex:0 0 auto;max-height:58vh;overflow-y:auto;border-top:1px solid #262b33;background:#131519;display:none}
+#result.on{display:block}
+.rd{padding:10px 14px;color:#9fb4c9;font-size:13.5px;border-bottom:1px solid #1f232a}
+.rd b{color:#e6e6e6}
+.opt{margin:8px 10px;padding:12px 13px;background:#1b1e24;border:1px solid #2a2f37;border-radius:12px}
+.opt .tag{font-size:12px;color:#7ee787;font-weight:bold;margin-bottom:6px}
+.opt .tx{font-size:16px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+.opt .meta{font-size:12px;color:#8a9099;margin-top:8px;line-height:1.6}
+.opt .cp{margin-top:10px;width:100%;padding:10px;border:0;border-radius:9px;background:#2e7d32;color:#fff;font-size:15px}
+.other{padding:0 14px 14px;font-size:13px;color:#9aa0a6;line-height:1.75}
+.other h4{margin:12px 0 4px;font-size:13px;color:#c8ccd2}
+footer{flex:0 0 auto;padding:10px 12px calc(14px + env(safe-area-inset-bottom));background:#181a1f;border-top:1px solid #262b33}
+footer textarea{width:100%;height:56px;background:#22252b;color:#e6e6e6;border:1px solid #33363d;border-radius:12px;padding:10px 12px;font-size:15px;resize:none;font-family:inherit}
+footer .btns{display:flex;gap:8px;margin-top:8px;align-items:stretch}
+footer .btns button{flex:1;padding:12px 0;border:0;border-radius:12px;font-size:15px;font-family:inherit}
+footer .mini{background:#2a2d33;color:#c8ccd2}
+footer .mini.her{color:#8fd3ff}
+#go{background:#2e7d32;color:#fff;font-weight:bold;font-size:16px;padding:14px 0}
+#go:disabled{background:#2a2d33;color:#6b7078}
+#extraBtn{width:100%;margin-top:6px;padding:9px;border:0;border-radius:10px;background:#22252b;color:#8a9099;font-size:13px;font-family:inherit}
+#extraBtn.on{background:#2f3742;color:#c8ccd2}
+#extraWrap textarea{height:132px;margin-top:6px;font-size:15px;line-height:1.55}
+#stat{padding:0 2px 6px;font-size:13px;color:#7ee787;min-height:16px}
+#set{position:fixed;inset:0;background:#0f1115;z-index:9;display:none;overflow-y:auto;padding:14px}
+#set.on{display:block}
+#set h3{font-size:16px;margin:0 0 12px}
+#set .setbar{position:sticky;top:0;z-index:3;background:#0f1115;display:flex;justify-content:space-between;align-items:center;padding:4px 0 12px;margin-top:-4px}
+#set .setbar b{font-size:16px}
+#set #setX{background:#2e7d32;color:#fff;border:0;border-radius:10px;padding:9px 14px;font-size:14px;font-weight:bold}
+#set label{display:block;font-size:12px;color:#8a9099;margin:14px 0 5px}
+#set input,#set textarea,#set select{width:100%;background:#22252b;color:#e6e6e6;border:1px solid #33363d;border-radius:10px;padding:11px;font-size:15px;font-family:inherit}
+#set textarea{resize:vertical;line-height:1.5}
+#set .row{display:flex;gap:10px}#set .row>div{flex:1}
+#set .ok{margin-top:18px;width:100%;padding:15px;border:0;border-radius:12px;background:#2e7d32;color:#fff;font-size:16px;font-weight:bold}
+#set .back{margin-top:10px;width:100%;padding:13px;border:0;border-radius:12px;background:#2a2d33;color:#c8ccd2;font-size:15px}
+#set .stabs{display:flex;gap:8px;margin-bottom:14px}
+#set .stab{flex:1;padding:11px;border:1px solid #33363d;background:#1b1e24;color:#9aa0a6;border-radius:10px;font-size:14px}
+#set .stab.on{background:#2e7d32;color:#fff;border-color:#2e7d32}
+#set input[type=range]{padding:0;margin:8px 0 4px;accent-color:#2e7d32;height:26px}
+#set .scale{display:flex;justify-content:space-between;font-size:10px;color:#6b7078;margin-bottom:10px}
+#set .sechead{margin:22px 0 8px;font-size:13px;color:#cfe3d0;font-weight:bold;border-left:3px solid #2e7d32;padding-left:8px}
+</style>
+</head>
+<body>
+
+<header>
+  <select id="sel"></select>
+  <button id="setBtn">⚙️</button>
+</header>
+<div id="updBanner" style="display:none">🔄 有新版本，点这里更新</div>
+
+<div id="log"></div>
+<div id="result"></div>
+
+<footer>
+  <div id="stat"></div>
+  <textarea id="msg" placeholder="粘贴或输入一条消息…"></textarea>
+  <div class="btns">
+    <button id="paste" class="mini">粘贴</button>
+    <button id="her" class="mini her">她说了</button>
+    <button id="mine" class="mini">我发了</button>
+  </div>
+  <button id="extraBtn">＋ 补充说明（表情包 / 语音 / 背景）</button>
+  <div id="extraWrap" style="display:none">
+    <textarea id="extra" placeholder="给下面这条的补充信息，比如：表情包是捂脸笑哭 / 她发了 15 秒语音说加班 / 前一句是问我周末干嘛"></textarea>
+  </div>
+  <div class="btns" style="margin-top:6px">
+    <button id="go">出建议</button>
+  </div>
+</footer>
+
+<div id="set">
+  <div class="setbar"><b>设置</b><button id="setX">✕ 返回聊天</button></div>
+  <div class="stabs">
+    <button class="stab on" id="tabProf">人物档案</button>
+    <button class="stab" id="tabData">密钥与数据</button>
+  </div>
+
+  <div id="paneData" style="display:none">
+    <label>DeepSeek API Key（sk- 开头）</label>
+    <input id="s_api" placeholder="sk-..." type="password" autocomplete="off">
+    <button class="ok" id="sSave">保存</button>
+    <button class="back" id="sExport">导出档案（备份到本地）</button>
+    <button class="back" id="sImport">导入档案（选 JSON 文件）</button>
+    <input type="file" id="sFile" accept=".json" style="display:none">
+    <button class="back" id="sClear">清空当前对象的对话</button>
+    <button class="back" id="sClose">关闭</button>
+    <div style="font-size:12px;color:#5d6673;margin-top:14px;line-height:1.8">
+      版本 <span id="ver">v23</span> · <a href="javascript:location.reload(true)" style="color:#8fb8ff">强制刷新</a><br>
+      数据只存在本机浏览器，不上传。
+    </div>
+  </div>
+
+  <div id="paneProf">
+    <div class="row">
+      <div><label>名字</label><input id="s_name"></div>
+      <div><label>年龄</label><input id="s_age"></div>
+    </div>
+    <div class="row">
+      <div><label>地区</label><input id="s_area"></div>
+      <div><label>平台</label><input id="s_platform"></div>
+    </div>
+
+    <label>关系阶段：<b id="stageLabel" style="color:#7ee787">刚认识</b></label>
+    <input type="range" id="s_stage" min="0" max="5" step="1" value="0">
+    <div class="scale"><span>刚认识</span><span>破冰</span><span>在聊</span><span>有热度</span><span>暧昧</span><span>上垒</span></div>
+
+    <label>我的目标</label>
+    <select id="s_goal">
+      <option>维持热度</option>
+      <option>试探身份（她把我当什么人）</option>
+      <option>推进到暧昧</option>
+      <option>推进到性话题</option>
+      <option>约电话/语音</option>
+      <option>约见面</option>
+      <option>收尾（今天不聊了）</option>
+    </select>
+
+    <label>她的类型 / 性格</label>
+    <textarea id="s_type" rows="3" placeholder="例：先要身份感再谈性；话题开放但不主动越界；讨厌复杂"></textarea>
+
+    <label>雷区（绝对不能碰）</label>
+    <textarea id="s_taboo" rows="3" placeholder="例：别说教、别追问感情、别承诺见面、别主动要照片视频"></textarea>
+
+    <label>我的定位（在她心里我是什么角色）</label>
+    <textarea id="s_myrole" rows="2" placeholder="例：高质量文友 / 情绪出口 / 潜在对象"></textarea>
+
+    <label>互动模式</label>
+    <textarea id="s_pattern" rows="2" placeholder="例：历史辩论 + 互损 + 表情包；她发语音我只回文字"></textarea>
+
+    <label>其它背景</label>
+    <textarea id="s_notes" rows="2" placeholder="补充信息"></textarea>
+
+    <label>历史进度（每行一条）</label>
+    <textarea id="s_hist" rows="4"></textarea>
+
+    <div class="sechead">关键信息（自动提取，可手改）</div>
+    <textarea id="s_facts" rows="6" placeholder="点下面「提取关键信息」自动填：身高、体重、年龄、生日、地址、职业、家庭、作息、喜好、忌讳…"></textarea>
+    <button class="back" id="sFactsBtn">🔍 从对话提取关键信息</button>
+    <button class="back" id="sAnalyzeBtn">🧠 深度分析人物（看穿口是心非）</button>
+    <div id="anaMsg" style="font-size:12px;color:#7ee787;margin-top:6px;min-height:14px"></div>
+
+    <button class="ok" id="sSave2">保存</button>
+    <button class="back" id="sClose2">关闭</button>
+  </div>
+</div>
+
+<script>
+const KEY='chat_mobile_v1';
+const STAGES=['刚认识','破冰','在聊','有热度','暧昧中','上垒（可上床）'];
+
+const STYLE=`【我的说话风格（务必模仿）】
+- 短句连发（"是的""对啊""1""狗屎"）或 200-400 字长分析，两极
+- 互损是常态："狗屎""放屁""蠢货""你丫的"，但只到玩笑级
+- 爱用框架词：必然/偶然、小病大病、天平两端、程序正义、最优解
+- 爱列点 1. 2. 3.
+- 会自嘲："我是低等牛""我对自己也抠"
+- 爱反问："我问你""你能想象吗"
+- 表情包：牛系列、猫
+- 关心方式是给方案不给情绪
+- 绝对不用"宝贝""想你""我在""心疼"，不撒娇不示弱不道歉`;
+
+const RULES=`【规矩】
+1. 不许设计"让她以为是她主动"的套路；正确做法是引用她真说过的话、抛问题让她答、把她的答案往前推一步。
+2. 一次只推进一步，跳级=关系崩。
+3. 她设边界就立刻停，并给一句体面收场。
+4. 不美化，她没兴趣就直说。`;
+
+const ASK=`【输出要求】
+只输出一个 JSON 对象，不要任何其他文字，格式：
+{
+ "read":"一句话判读，20字内",
+ "score":{"interest":6,"invest":5,"advance":6},
+ "options":[
+   {"tag":"A 保守","text":"可直接发送的原话","expect":"她大概怎么回","risk":"风险"},
+   {"tag":"B 推进","text":"...","expect":"...","risk":"..."},
+   {"tag":"C 退一步","text":"...","expect":"...","risk":"..."}
+ ],
+ "path":["第1步：话术","第2步：话术","第3步：话术"],
+ "taboo":["禁忌1","禁忌2","禁忌3"]
+}
+"text" 必须是一句可以直接发给她的聊天消息（像真人发微信那样）。
+不要写"建议表达关心"这类说明文字，也不要输出"我不能帮你"这类拒绝语；
+如果某个选项涉及敏感内容，就用含蓄、有分寸的说法，保持可发送。`;
+
+let db={apiKey:'',contacts:[],activeId:null};
+try{const r=localStorage.getItem(KEY);if(r)db=JSON.parse(r);}catch(e){}
+const $=i=>document.getElementById(i);
+const save=()=>localStorage.setItem(KEY,JSON.stringify(db));
+const esc=s=>String(s||'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+const now=()=>{const d=new Date();return (d.getMonth()+1)+'/'+d.getDate()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');};
+const A=()=>db.contacts.find(c=>c.id===db.activeId);
+
+db.contacts.forEach(function(c){
+  if(typeof c.stage==='string'){
+    var idx=0;
+    for(var i=0;i<STAGES.length;i++){ if(c.stage.indexOf(STAGES[i])===0){ idx=i; break; } }
+    if(c.stage.indexOf('冷')>=0) idx=1;
+    c.stage=idx;
+  }
+  if(typeof c.stage!=='number') c.stage=0;
+});
+save();
+
+if(!db.contacts.length){
+  db.contacts=[{id:'c1',name:'对象1',age:'',area:'',platform:'微信',stage:0,goal:'维持热度',
+    type:'',taboo:'',myrole:'',pattern:'',notes:'',hist:'',dialog:[]}];
+  db.activeId='c1'; save();
+}
+
+function renderSel(){
+  const s=$('sel');s.innerHTML='';
+  db.contacts.forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=c.name||'未命名';s.appendChild(o);});
+  s.value=db.activeId;
+}
+function renderLog(){
+  const c=A(),log=$('log');log.innerHTML='';
+  if(!c)return;
+  if(!c.dialog.length){
+    log.innerHTML='<div class="hint">还没有对话<br>把消息粘到下面，点「她说了」/「我发了」记录<br>需要建议时点「出建议」</div>';
+    return;
+  }
+  c.dialog.forEach((m)=>{
+    const d=document.createElement('div');
+    d.className='m '+(m.who==='我'?'me':'her');
+    const note=m.note?'<div class="nt">📝 '+esc(m.note)+'</div>':'';
+    d.innerHTML='<div><div class="b">'+esc(m.text)+'</div>'+note+'</div>';
+    d.querySelector('.b').onclick=function(){
+      var v=prompt('给这条消息加说明（表情包/语音/背景；留空删除）', m.note||'');
+      if(v===null) return;
+      v=v.trim();
+      if(v){ m.note=v; } else { delete m.note; }
+      save(); renderLog();
+    };
+    log.appendChild(d);
+  });
+  log.scrollTop=log.scrollHeight;
+}
+function renderResult(data){
+  const r=$('result');r.innerHTML='';r.classList.add('on');
+  if(!data){r.innerHTML='<div class="rd">返回格式异常，见控制台</div>';return;}
+  let h='';
+  if(data.read)h+='<div class="rd"><b>判读</b>：'+esc(data.read)+'</div>';
+  const s=data.score||{};
+  if(s.interest!=null)h+='<div class="rd">兴趣 '+s.interest+'/10 · 投入 '+s.invest+'/10 · 可推进 '+s.advance+'/10</div>';
+  (data.options||[]).forEach((o,i)=>{
+    h+='<div class="opt"><div class="tag">'+esc(o.tag||('选项'+(i+1)))+'</div>'+
+       '<div class="tx">'+esc(o.text)+'</div>'+
+       '<div class="meta">预期：'+esc(o.expect||'')+'<br>风险：'+esc(o.risk||'')+'</div>'+
+       '<button class="cp" data-i="'+i+'">复制这句</button></div>';
+  });
+  if((data.path||[]).length){h+='<div class="other"><h4>路径</h4>'+data.path.map(p=>'· '+esc(p)).join('<br>')+'</div>';}
+  if((data.taboo||[]).length){h+='<div class="other"><h4>禁忌</h4>'+data.taboo.map(p=>'· '+esc(p)).join('<br>')+'</div>';}
+  r.innerHTML=h;
+  r.querySelectorAll('.cp').forEach(b=>{
+    b.onclick=function(){
+      const i=b.dataset.i, t=(data.options||[])[i].text;
+      const done=function(){
+        b.textContent='✅ 已复制并记录';
+        const cc=A(); if(cc){ cc.dialog.push({who:'我',text:t,ts:now()}); save(); renderLog(); }
+        setTimeout(function(){ b.textContent='复制这句'; },1800);
+      };
+      if(navigator.clipboard){ navigator.clipboard.writeText(t).then(done).catch(function(){ alert('复制失败，手动长按选中：\n'+t); }); }
+      else { alert('请手动复制：\n'+t); }
+    };
+  });
+}
+function stat(t,bad){const s=$('stat');s.textContent=t;s.style.color=bad?'#ff8a80':'#7ee787';}
+
+function addMsg(who){
+  const c=A(); if(!c) return;
+  const t=$('msg').value.trim();
+  if(!t) return alert('输入框是空的，先把消息粘贴或输入进来');
+  c.dialog.push({who:who,text:t,ts:now()});
+  $('msg').value='';
+  const ex=$('extra'); if(ex) ex.value='';
+  save(); renderLog();
+  stat(who==='她'?'已记录：她说的':'已记录：我说的');
+}
+$('her').onclick=function(){ addMsg('她'); };
+$('mine').onclick=function(){ addMsg('我'); };
+$('paste').onclick=async function(){
+  try{
+    const t=await navigator.clipboard.readText();
+    if(t){ $('msg').value=t; stat('已粘贴，选「她说了」或「我发了」'); }
+    else stat('剪贴板是空的',true);
+  }catch(e){ stat('浏览器不让读剪贴板，请手动粘贴',true); }
+};
+$('extraBtn').onclick=function(){
+  const w=$('extraWrap');
+  const on=w.style.display==='none';
+  w.style.display=on?'block':'none';
+  this.className=on?'on':'';
+  if(on) $('extra').focus();
+};
+
+async function callAPI(prompt){
+  if(!db.apiKey) throw new Error('还没填 API Key，点右上角 ⚙️');
+  const res=await fetch('https://api.deepseek.com/chat/completions',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+db.apiKey},
+    body:JSON.stringify({
+      model:'deepseek-flash',
+      messages:[{role:'user',content:prompt}],
+      temperature:0.8,
+      max_tokens:1500,
+      response_format:{type:'json_object'},
+      thinking:{type:'disabled'}
+    })
+  });
+  if(!res.ok) throw new Error('API 返回 '+res.status+'：'+(await res.text()).slice(0,160));
+  const j=await res.json();
+  let content=j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content;
+  if(!content) throw new Error('返回格式不对');
+  content=content.trim().replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/```$/,'').trim();
+  try{ return JSON.parse(content); }catch(e){ console.log('RAW',content); return null; }
+}
+
+$('go').onclick=async function(){
+  const c=A(); if(!c) return;
+  if(!c.dialog.length) return alert('对话是空的，先用「她说了」「我发了」记录几条');
+
+  const extraEl=$('extra');
+  const extraText=extraEl?extraEl.value.trim():'';
+  let recent=c.dialog.slice(-20).map(m=>m.who+'：'+m.text+(m.note?('  〔我的说明：'+m.note+'〕'):'')).join('\n');
+  if(extraText) recent='【补充说明（我加的，不是她说的）】\n'+extraText+'\n\n【对话】\n'+recent;
+
+  const prompt=`帮我回一条消息，严格照做。
+
+${STYLE}
+
+【对象】${c.name}｜${c.age}岁｜${c.area}｜${c.platform}
+【关系阶段】${STAGES[c.stage]||'未知'}
+【我的目标】${c.goal}
+【她的类型/性格】${c.type||'未知'}
+【雷区（绝对不能碰）】${c.taboo||'未知'}
+【我的定位】${c.myrole||'未知'}
+【互动模式】${c.pattern||'未知'}
+【其它背景】${c.notes||'无'}
+【关键信息】${(c.facts||'').replace(/\n/g,'；')||'无'}
+【历史】${(c.hist||'').replace(/\n/g,'；')||'无'}
+
+${RULES}
+${ASK}
+
+【最近对话（最后一条是要回的）】
+${recent}`;
+
+  this.disabled=true; stat('分析中…');
+  try{
+    const data=await callAPI(prompt);
+    renderResult(data);
+    stat(data?'✅ 出好了':'⚠️ 模型没按 JSON 返回');
+  }catch(e){ stat('❌ '+e.message,true); }
+  finally{ this.disabled=false; }
+};
+
+async function callModel(model, prompt, maxTokens){
+  if(!db.apiKey) throw new Error('还没填 API Key，点右上角 ⚙️');
+  const res=await fetch('https://api.deepseek.com/chat/completions',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+db.apiKey},
+    body:JSON.stringify({
+      model:model,
+      messages:[{role:'user',content:prompt}],
+      max_tokens:maxTokens||2000,
+      response_format:{type:'json_object'},
+      thinking:{type:'disabled'}
+    })
+  });
+  if(!res.ok) throw new Error('API '+res.status+'：'+(await res.text()).slice(0,160));
+  const j=await res.json();
+  let c=j.choices[0].message.content.trim().replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/```$/,'').trim();
+  return JSON.parse(c);
+}
+function dialogText(c, limit){
+  const arr = limit ? c.dialog.slice(-limit) : c.dialog;
+  return arr.map(function(m){
+    return (m.who==='我'?'我':'她')+'：'+m.text+(m.note?'〔说明：'+m.note+'〕':'');
+  }).join('\n');
+}
+function anaStat(t){ const e=document.getElementById('anaMsg'); if(e) e.textContent=t; }
+
+$('sFactsBtn').onclick=async function(){
+  const c=A(); if(!c) return;
+  if(!c.dialog.length) return alert('对话是空的');
+  const btn=this; btn.disabled=true; anaStat('提取中…');
+  try{
+    const d=dialogText(c,1500);
+    const out=await callModel('deepseek-v4-pro',
+`下面是我和一个女生的聊天记录。请从中提取关于"她"的客观事实与稳定特征，只提取记录里真实出现或可高置信推断的内容。
+要求：
+1. 输出 JSON：{"facts":[{"k":"身高","v":"167cm","evidence":"原话","conf":0.9},...]}
+2. 可能的维度：年龄、生日、身高、体重、三围、地址/城市、单位/职业、职务、收入线索、家庭成员、婚姻/恋爱史、作息、饮食偏好、运动习惯、健康、宠物、学历、兴趣、消费观、社交平台、口头禅。
+3. evidence 必须是聊天里的原话片段，找不到原话就留空。
+4. conf 是置信度 0-1；语气戏谑、开玩笑、夸张的说法要降置信度。
+5. 没有提到的维度不要编。
+
+聊天记录：
+${d}` , 2000);
+    const lines=(out.facts||[]).map(function(f){
+      return f.k+'：'+f.v+(f.evidence?('（原话：'+f.evidence+'）'):'')+(f.conf!=null?('  [置信'+(Math.round(f.conf*100))+'%]'):'');
+    });
+    $('s_facts').value=lines.join('\n');
+    c.facts=$('s_facts').value; save();
+    anaStat('✅ 提取了 '+(out.facts||[]).length+' 条');
+  }catch(e){ anaStat('❌ '+e.message); }
+  finally{ btn.disabled=false; }
+};
+
+$('sAnalyzeBtn').onclick=async function(){
+  const c=A(); if(!c) return;
+  if(!c.dialog.length) return alert('对话是空的');
+  const btn=this; btn.disabled=true; anaStat('深度分析中（约 20-40 秒）…');
+  try{
+    const d=dialogText(c,1500);
+    const out=await callModel('deepseek-v4-pro',
+`你是行为分析专家。下面是"我"和一个女生（${c.name}，${c.age}岁，${c.area}）从加好友到现在的聊天记录。
+
+任务：分析她真实的心理状态和行为模式，不要只是复述她说过的话。
+
+方法要求：
+1. 区分"她说的"和"她做的"：她声称的偏好 vs 实际行为（谁主动、回复速度、投入程度、是否兑现）。
+2. 找矛盾点：口是心非、欲擒故纵、试探、回避、设防、情绪波动。要指出具体是哪几句体现的。
+3. 判断她对"我"的真实定位：聊天工具人 / 情绪出口 / 备胎 / 潜在对象 / 已当熟人但无感 / 有其他更优先目标。
+4. 判断当前最大的阻碍是什么（她自己？前一段关系？距离？我对她的吸引力不足？）。
+5. 给出她最在意什么、最怕什么、什么东西能打动她、什么东西会让她跑。
+
+输出 JSON：
+{
+ "one_line":"一句话结论（30字内）",
+ "truth":"她的真实心理（200-300字，要有推导链条，不只复述）",
+ "contradictions":[{"said":"她说的话","did":"实际表现","meaning":"这说明什么"}],
+ "position":"她把我当什么（含依据）",
+ "obstacle":"当前最大阻碍",
+ "wants":"她最在意的三样",
+ "fears":"她最怕的",
+ "turn_on":"什么能打动她",
+ "turn_off":"什么会让她跑",
+ "type":"她的类型/性格（多行，可复制到档案）",
+ "taboo":"雷区（多行）",
+ "myrole":"我对她的定位建议（多行）",
+ "pattern":"互动模式（多行）"
+}
+
+聊天记录：
+${d}`, 3000);
+    const fill=function(field, val){
+      if(val && (!c[field] || confirm('「'+field+'」已有内容，用分析结果覆盖？'))){ c[field]=val; }
+    };
+    const ok=confirm((out.one_line||'')+'\n\n'+(out.truth||'')+'\n\n是否把分析结果写入档案？');
+    if(ok){
+      if(out.type) c.type=out.type;
+      if(out.taboo) c.taboo=out.taboo;
+      if(out.myrole) c.myrole=out.myrole;
+      if(out.pattern) c.pattern=out.pattern;
+      const extra=[];
+      if(out.position) extra.push('【她把我当】'+out.position);
+      if(out.obstacle) extra.push('【最大阻碍】'+out.obstacle);
+      if(out.wants) extra.push('【她最在意】'+(Array.isArray(out.wants)?out.wants.join('、'):out.wants));
+      if(out.fears) extra.push('【她最怕】'+out.fears);
+      if(out.turn_on) extra.push('【能打动她】'+out.turn_on);
+      if(out.turn_off) extra.push('【会让她跑】'+out.turn_off);
+      if((out.contradictions||[]).length){
+        extra.push('【矛盾点】');
+        out.contradictions.forEach(function(x){ extra.push('· 她说「'+x.said+'」，实际'+x.did+' → '+x.meaning); });
+      }
+      c.notes=(c.notes||'')+'\n\n'+extra.join('\n');
+      save(); loadSet(); anaStat('✅ 分析完成，已写入档案');
+    } else { anaStat('已取消写入'); }
+  }catch(e){ anaStat('❌ '+e.message); }
+  finally{ btn.disabled=false; }
+};
+
+$('sel').onchange=function(e){
+  db.activeId=e.target.value; save(); renderLog();
+  $('result').classList.remove('on');
+  stat('');
+};
+
+function loadBackup(obj){
+  try{
+    var d=(typeof obj==='string')?JSON.parse(obj):obj;
+    var cs=d.contacts||d;
+    if(!Array.isArray(cs)||!cs.length) throw new Error('里面没有对象数据');
+    db.contacts=cs;
+    if(d.apiKey) db.apiKey=d.apiKey;
+    db.activeId=cs[0].id;
+    db.contacts.forEach(function(c){
+      if(typeof c.stage==='string'){
+        var idx=0;
+        for(var i=0;i<STAGES.length;i++){ if(c.stage.indexOf(STAGES[i])===0){ idx=i; break; } }
+        c.stage=idx;
+      }
+      if(typeof c.stage!=='number') c.stage=0;
+    });
+    save(); renderSel(); renderLog();
+
+/* 自动检测新版本 */
+const APP_VER='22';
+(function checkUpdate(){
+  function go(){
+    fetch('version.json?t='+Date.now(),{cache:'no-store'})
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        if(j && String(j.v) !== APP_VER){
+          var b=document.getElementById('updBanner');
+          b.style.display='block';
+          b.onclick=function(){
+            location.replace(location.pathname+'?v='+Date.now());
+          };
+        }
+      })
+      .catch(function(){});
+  }
+  setTimeout(go, 1200);
+  document.addEventListener('visibilitychange', function(){
+    if(document.visibilityState==='visible') go();
+  });
+})(); loadSet();
+    alert('导入成功：'+cs.length+' 个对象');
+  }catch(e){ alert('导入失败：'+e.message); }
+}
+function exportBackup(){
+  var out={contacts:db.contacts};
+  var b=new Blob([JSON.stringify(out,null,2)],{type:'application/json'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(b);
+  a.download='聊天档案_'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
+}
+
+function updateStageLabel(){
+  var v=parseInt($('s_stage').value)||0;
+  $('stageLabel').textContent=STAGES[v]||'';
+}
+function loadSet(){
+  const c=A();
+  $('s_api').value=db.apiKey||'';
+  if(!c) return;
+  $('s_name').value=c.name||''; $('s_age').value=c.age||'';
+  $('s_area').value=c.area||''; $('s_platform').value=c.platform||'';
+  $('s_stage').value=c.stage||0; updateStageLabel();
+  $('s_goal').value=c.goal||'维持热度';
+  $('s_type').value=c.type||''; $('s_taboo').value=c.taboo||'';
+  $('s_myrole').value=c.myrole||''; $('s_pattern').value=c.pattern||'';
+  $('s_notes').value=c.notes||''; $('s_hist').value=c.hist||'';
+  $('s_facts').value=c.facts||'';
+}
+function saveSet(){
+  const c=A();
+  db.apiKey=$('s_api').value.trim();
+  if(c){
+    c.name=$('s_name').value; c.age=$('s_age').value; c.area=$('s_area').value;
+    c.platform=$('s_platform').value; c.stage=parseInt($('s_stage').value)||0;
+    c.goal=$('s_goal').value;
+    c.type=$('s_type').value; c.taboo=$('s_taboo').value;
+    c.myrole=$('s_myrole').value; c.pattern=$('s_pattern').value;
+    c.notes=$('s_notes').value; c.hist=$('s_hist').value;
+    c.facts=$('s_facts').value;
+  }
+  save(); renderSel(); stat('已保存');
+}
+function switchTab(which){
+  var isData=(which==='data');
+  $('paneData').style.display=isData?'block':'none';
+  $('paneProf').style.display=isData?'none':'block';
+  $('tabData').className='stab'+(isData?' on':'');
+  $('tabProf').className='stab'+(isData?'':' on');
+}
+$('tabData').onclick=function(){ switchTab('data'); };
+$('tabProf').onclick=function(){ switchTab('prof'); };
+$('s_stage').oninput=updateStageLabel;
+$('setBtn').onclick=function(){ loadSet(); $('set').classList.add('on'); switchTab('prof'); };
+$('setX').onclick=function(){ $('set').classList.remove('on'); };
+$('sClose').onclick=function(){ $('set').classList.remove('on'); };
+$('sClose2').onclick=function(){ $('set').classList.remove('on'); };
+$('sSave').onclick=saveSet;
+$('sSave2').onclick=saveSet;
+$('sExport').onclick=function(){ exportBackup(); };
+$('sImport').onclick=function(){ $('sFile').click(); };
+$('sFile').onchange=function(e){
+  var f=e.target.files[0]; if(!f) return;
+  var r=new FileReader();
+  r.onload=function(){ loadBackup(r.result); e.target.value=''; };
+  r.readAsText(f);
+};
+$('sClear').onclick=function(){
+  const c=A(); if(!c) return;
+  if(!confirm('清空和「'+c.name+'」的对话记录？')) return;
+  c.dialog=[]; save(); renderLog(); stat('已清空');
+};
+
+renderSel(); renderLog();
+if(!db.apiKey) setTimeout(function(){ alert('第一次用：点右上角 ⚙️，填 DeepSeek API Key（sk- 开头）'); },600);
+</script>
+<script>
+/* 一次性清除旧的 Service Worker 与缓存（此版本之后不再注册 SW） */
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(function (rs) {
+    rs.forEach(function (r) { r.unregister(); });
+  }).catch(function () {});
+  if (window.caches && caches.keys) {
+    caches.keys().then(function (ks) {
+      ks.forEach(function (k) { caches.delete(k); });
+    }).catch(function () {});
+  }
+}
+</script>
+</body>
+</html>
