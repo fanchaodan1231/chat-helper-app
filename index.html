@@ -22,6 +22,27 @@ header{flex:0 0 auto;display:flex;align-items:center;gap:8px;
 header select{flex:1;background:#22252b;color:#e6e6e6;border:1px solid #33363d;border-radius:10px;padding:10px;font-size:15px}
 header button{background:#22252b;border:0;color:#c8ccd2;border-radius:10px;padding:10px 12px;font-size:16px}
 #updBanner{display:none;background:#1f6feb;color:#fff;text-align:center;padding:10px;font-size:14px;font-weight:bold;cursor:pointer}
+#app{display:flex;flex:1;min-height:0}
+#side{display:none;flex:0 0 230px;background:#14161b;border-right:1px solid #262b33;flex-direction:column}
+#side.open{display:flex}
+.sidehead{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;font-size:13px;color:#8a9099;border-bottom:1px solid #22262d}
+.sidehead button{background:#2a2d33;border:0;color:#c8ccd2;border-radius:8px;padding:4px 10px;font-size:15px}
+#clist{flex:1;overflow-y:auto}
+.citem{padding:12px 14px;border-bottom:1px solid #1c2027;cursor:pointer}
+.citem.on{background:#1f3a22;border-left:3px solid #2e7d32}
+.citem .cn{font-size:15px;color:#e6e6e6}
+.citem .cs{font-size:11px;color:#7d838a;margin-top:3px}
+.sidefoot{padding:10px;border-top:1px solid #22262d}
+.sidefoot button{width:100%;padding:10px;border:0;border-radius:9px;background:#22252b;color:#c8ccd2;font-size:13px}
+#main{display:flex;flex-direction:column;flex:1;min-width:0}
+#title{flex:1;font-size:15px;color:#e6e6e6;text-align:center;font-weight:bold}
+#menuBtn{display:block}
+#batch{position:fixed;inset:0;background:#0f1115;z-index:10;display:none;overflow-y:auto;padding:14px}
+#batch.on{display:block}
+#batch textarea{width:100%;background:#22252b;color:#e6e6e6;border:1px solid #33363d;border-radius:10px;padding:10px;font-size:14px;font-family:inherit;line-height:1.6}
+#batch .ok{margin-top:12px;width:100%;padding:14px;border:0;border-radius:12px;background:#2e7d32;color:#fff;font-size:16px;font-weight:bold}
+#batch .back{margin-top:8px;width:100%;padding:12px;border:0;border-radius:12px;background:#2a2d33;color:#c8ccd2;font-size:15px}
+#batch code{background:#22252b;padding:1px 5px;border-radius:4px;color:#9ad19d}
 #log{flex:1;overflow-y:auto;padding:12px 14px;min-height:60px}
 .m{display:flex;margin:6px 0}
 .m.me{justify-content:flex-end}
@@ -80,12 +101,26 @@ footer .mini.her{color:#8fd3ff}
 #set .airow select{padding:6px;border-radius:8px;background:#22252b;color:#e6e6e6;border:1px solid #33363d;font-size:12px;width:auto}
 #set .aifb{width:100%;margin-top:6px;background:#22252b;color:#e6e6e6;border:1px solid #33363d;border-radius:8px;padding:8px;font-size:12.5px}
 #set .sechead{margin:22px 0 8px;font-size:13px;color:#cfe3d0;font-weight:bold;border-left:3px solid #2e7d32;padding-left:8px}
+@media (min-width:720px){
+  #side{display:flex}
+  #menuBtn{display:none}
+}
 </style>
 </head>
 <body>
 
+<div id="app">
+  <aside id="side">
+    <div class="sidehead"><span>对象</span><button id="addBtn">＋</button></div>
+    <div id="clist"></div>
+    <div class="sidefoot">
+      <button id="importChatBtn">📥 批量导入对话</button>
+    </div>
+  </aside>
+  <div id="main">
 <header>
-  <select id="sel"></select>
+  <button id="menuBtn">☰</button>
+  <div id="title">聊天助手</div>
   <button id="setBtn">⚙️</button>
 </header>
 <div id="updBanner" style="display:none">🔄 有新版本，点这里更新</div>
@@ -109,6 +144,23 @@ footer .mini.her{color:#8fd3ff}
     <button id="go">出建议</button>
   </div>
 </footer>
+  </div>
+</div>
+
+<div id="batch">
+  <div class="setbar"><b>批量导入对话</b><button id="batchX">✕ 关闭</button></div>
+  <div style="font-size:12.5px;color:#9aa0a6;line-height:1.8;margin-bottom:10px">
+    把聊天记录整段粘进来，每行一条，用「她：」「我：」开头。<br>
+    例：<br>
+    <code>她：刚睡醒</code><br>
+    <code>我：陛下在上早朝？</code><br>
+    没有前缀的行会接在上一条后面。时间戳（如 16:30）会自动剥掉。
+  </div>
+  <textarea id="batchText" rows="12" placeholder="她：xxx&#10;我：xxx&#10;她：xxx"></textarea>
+  <div id="batchInfo" style="font-size:12px;color:#7ee787;margin-top:8px;min-height:16px"></div>
+  <button class="ok" id="batchDo">导入到当前对象</button>
+  <button class="back" id="batchCancel">取消</button>
+</div>
 
 <div id="set">
   <div class="setbar"><b>设置</b><button id="setX">✕ 返回聊天</button></div>
@@ -127,7 +179,7 @@ footer .mini.her{color:#8fd3ff}
     <button class="back" id="sClear">清空当前对象的对话</button>
     <button class="back" id="sClose">关闭</button>
     <div style="font-size:12px;color:#5d6673;margin-top:14px;line-height:1.8">
-      版本 <span id="ver">v24</span> · <a href="javascript:location.reload(true)" style="color:#8fb8ff">强制刷新</a><br>
+      版本 <span id="ver">v25</span> · <a href="javascript:location.reload(true)" style="color:#8fb8ff">强制刷新</a><br>
       数据只存在本机浏览器，不上传。
     </div>
   </div>
@@ -252,9 +304,23 @@ if(!db.contacts.length){
 }
 
 function renderSel(){
-  const s=$('sel');s.innerHTML='';
-  db.contacts.forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=c.name||'未命名';s.appendChild(o);});
-  s.value=db.activeId;
+  const box=$('clist'); if(!box) return;
+  box.innerHTML='';
+  db.contacts.forEach(function(c){
+    const d=document.createElement('div');
+    d.className='citem'+(c.id===db.activeId?' on':'');
+    d.innerHTML='<div class="cn">'+esc(c.name||'未命名')+'</div>'+
+                '<div class="cs">'+esc(STAGES[c.stage]||'')+' · 第'+(c.dialog?c.dialog.length:0)+'条</div>';
+    d.onclick=function(){
+      db.activeId=c.id; save(); renderSel(); renderLog();
+      $('result').classList.remove('on');
+      $('title').textContent=c.name||'未命名';
+      if(window.innerWidth<720) $('side').classList.remove('open');
+    };
+    box.appendChild(d);
+  });
+  const cur=A();
+  if(cur) $('title').textContent=cur.name||'未命名';
 }
 function renderLog(){
   const c=A(),log=$('log');log.innerHTML='';
@@ -596,10 +662,14 @@ ${delta}
   finally{ btn.disabled=false; }
 };
 
-$('sel').onchange=function(e){
-  db.activeId=e.target.value; save(); renderLog();
-  $('result').classList.remove('on');
-  stat('');
+$('menuBtn').onclick=function(){ $('side').classList.toggle('open'); };
+$('addBtn').onclick=function(){
+  var n=prompt('新对象的名字（备注即可）');
+  if(!n) return;
+  var c={id:'c'+Date.now(),name:n.trim(),age:'',area:'',platform:'微信',stage:0,goal:'维持热度',
+    type:'',taboo:'',myrole:'',pattern:'',notes:'',hist:'',facts:'',dialog:[],analyses:[],corrections:[]};
+  db.contacts.push(c); db.activeId=c.id; save(); renderSel(); renderLog();
+  $('title').textContent=c.name;
 };
 
 function loadBackup(obj){
@@ -618,7 +688,41 @@ function loadBackup(obj){
       }
       if(typeof c.stage!=='number') c.stage=0;
     });
-    save(); renderSel(); renderLog();
+    save(); $('importChatBtn').onclick=function(){ $('batch').classList.add('on'); $('batchText').focus(); };
+$('batchX').onclick=function(){ $('batch').classList.remove('on'); };
+$('batchCancel').onclick=function(){ $('batch').classList.remove('on'); };
+$('batchText').oninput=function(){
+  var r=parseBatch(this.value);
+  $('batchInfo').textContent = r.length? ('识别出 '+r.length+' 条消息') : '';
+};
+function parseBatch(txt){
+  var out=[], cur=null;
+  txt.split(/\r?\n/).forEach(function(line){
+    if(!line.trim()) return;
+    var m=line.match(/^\s*(?:\d{4}[-\/]\d{1,2}[-\/]\d{1,2}\s+)?(?:\d{1,2}:\d{2}(?::\d{2})?\s+)?(她|我|对方|他|女方|男方)\s*[:：]\s*(.*)$/);
+    if(m){
+      var who = (m[1]==='我'||m[1]==='男方') ? '我' : '她';
+      cur={who:who,text:m[2].trim(),ts:''};
+      if(cur.text) out.push(cur); else cur=null;
+    } else {
+      if(cur) cur.text += (cur.text?' ':'') + line.trim();
+    }
+  });
+  return out;
+}
+$('batchDo').onclick=function(){
+  const c=A(); if(!c) return alert('先选一个对象');
+  var arr=parseBatch($('batchText').value);
+  if(!arr.length) return alert('没识别出消息，检查格式（每行用「她：」「我：」开头）');
+  if(!confirm('将导入 '+arr.length+' 条到「'+c.name+'」，追加到现有对话末尾？')) return;
+  c.dialog=c.dialog.concat(arr);
+  save(); renderLog(); renderSel();
+  $('batchText').value=''; $('batchInfo').textContent='';
+  $('batch').classList.remove('on');
+  stat('✅ 已导入 '+arr.length+' 条');
+};
+
+renderSel(); renderLog();
 
 /* 自动检测新版本 */
 const APP_VER='22';
